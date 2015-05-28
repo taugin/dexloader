@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="custom_rules" default="help">
+    <property name="classes_dex" location="bin/classes.dex"/>
+    <target name="-post-compile">
+        <echo>${out.library.jar.file}  --------> ${classes_dex}</echo>
+        <exec executable="${dx}" failonerror="false">
+            <arg value="--dex"/>
+            <arg value="--output=${classes_dex}"/>
+            <arg value="${out.library.jar.file}"/>
+        </exec>
+    </target>
+</project>
