@@ -1,5 +1,6 @@
 package com.loader.dexloader;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -9,29 +10,43 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 
+import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserException;
+import org.xmlpull.v1.XmlPullParserFactory;
+
 import android.app.Application;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.content.res.XmlResourceParser;
 import android.os.Bundle;
+import android.text.TextUtils;
+import android.util.Base64;
 import dalvik.system.DexClassLoader;
 
 public class LoaderApp extends Application {
 
     private static final String appkey = "APPLICATION_CLASS_NAME";
+    private static final String LODER_CONFIG_FILE = "loaderconfig.dat";
+    private String mEncryptionDexFile = "classes.dex";
 
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(base);
         try {
             String odexPath = getDir("odex_path", MODE_PRIVATE)
                     .getAbsolutePath();
+            parseLoaderConfig();
             String dexPath = generateSrcDex();
             String libPath = getApplicationInfo().nativeLibraryDir;
             Log.d(Log.TAG, "dexPath : " + dexPath);
             Log.d(Log.TAG, "libPath : " + libPath);
             Log.d(Log.TAG, "odexPath : " + odexPath);
+            if (TextUtils.isEmpty(dexPath)) {
+                Log.d(Log.TAG, "Fail to Write " + mEncryptionDexFile);
+                System.exit(0);
+            }
             // 配置动态加载环境
             Object currentActivityThread = RefInvoke.invokeStaticMethod(
                     "android.app.ActivityThread", "currentActivityThread",
@@ -118,13 +133,25 @@ public class LoaderApp extends Application {
         app.onCreate();
     }
 
+    private void parseLoaderConfig() {
+        try {
+            InputStream is = getAssets().open(LODER_CONFIG_FILE);
+            // is = decodeString(is);
+            if (is != null) {
+                parseXml(is);
+                is.close();
+            }
+        } catch (IOException e) {
+            Log.d(Log.TAG, "error : " + e);
+        }
+    }
+
     private String generateSrcDex() {
         try {
             String srcDexPath = getDir("dex_path", MODE_PRIVATE)
-                    .getAbsolutePath() + File.separator + "classes.dex";
+                    .getAbsolutePath() + File.separator + mEncryptionDexFile;
             FileOutputStream fis = new FileOutputStream(srcDexPath);
-            String assetDex = "classes.dex";
-            InputStream is = getAssets().open(assetDex);
+            InputStream is = getAssets().open(mEncryptionDexFile);
             byte buffer[] = new byte[4096];
             int read = 0;
             while ((read = is.read(buffer)) > 0) {
@@ -133,6 +160,56 @@ public class LoaderApp extends Application {
             is.close();
             fis.close();
             return srcDexPath;
+        } catch (IOException e) {
+            Log.d(Log.TAG, "error : " + e);
+        }
+        return null;
+    }
+
+    private void parseXml(InputStream in) {
+        int eventType;
+        try {
+            XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
+            factory.setNamespaceAware(true);
+            XmlPullParser xmlParser = factory.newPullParser();
+            xmlParser.setInput(in, "UTF-8");
+            eventType = xmlParser.getEventType();
+            String strName = null;
+            while (eventType != XmlResourceParser.END_DOCUMENT) {
+                if (eventType == XmlResourceParser.START_TAG) {
+                    strName = xmlParser.getName();
+                    if ("dexfile".equalsIgnoreCase(strName)) {
+                        mEncryptionDexFile = xmlParser.nextText();
+                    }
+                }
+                eventType = xmlParser.next();
+            }
+        } catch (XmlPullParserException e) {
+            Log.d(Log.TAG, "error : " + e);
+        } catch (IOException e) {
+            Log.d(Log.TAG, "error : " + e);
+        }
+    }
+
+    private InputStream decodeString(InputStream is) {
+        if (is == null) {
+            return null;
+        }
+        try {
+            byte[] buffer = new byte[1024];
+            int read = -1;
+            StringBuilder builder = new StringBuilder();
+            while ((read = is.read(buffer)) > 0) {
+                builder.append(new String(buffer, 0, read, "UTF-8"));
+            }
+            is.close();
+            if (builder.length() > 0) {
+                byte[] decodedString = Base64.decode(builder.toString(),
+                        Base64.DEFAULT);
+                InputStream inputStream = new ByteArrayInputStream(
+                        decodedString);
+                return inputStream;
+            }
         } catch (IOException e) {
             Log.d(Log.TAG, "error : " + e);
         }

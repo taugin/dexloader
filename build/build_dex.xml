@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="dex_role">
+    <property name ="project.dex" value ="${basedir}/bin" />
+	<property name ="project.xml" value ="${basedir}/bin" />
+	<property name ="project.temp" value ="${basedir}/assets" />
+	<property name ="project.encodefilepath" value ="${basedir}/assets" />
+	<property name ="project.tool" value ="${basedir}/../../NagaTool" />
+	<property name ="project.lib" value ="${basedir}/libs" />
+	<property name ="project.so_common" value ="${basedir}/../../jniso" />
+    <!-- <target name="-md5" depends="-dex">
+        <echo>"mac = "${mac}</echo>
+        <exec executable="bash" failonerror="true">
+            <arg value="${basedir}/genMD5.sh"/>
+            <arg value="1" />
+            <arg value="${mac}"/>
+        </exec>
+    </target> 
+	-->
+	
+    <target name ="-encrypt-dex" depends="-dex" >
+		<echo message="-encrypt-dex " />
+			<echo message="-encrypt-dex project.is.encrypt_old = true" />
+			<!-- new -->
+			<move file="${project.dex}/classes.dex" todir="${project.tool}/tmp" />	
+			<exec dir ="${project.tool}" executable ="cmd">
+			<!-- new -->
+				<arg line="/c libdbone.exe tmp/classes.dex libchaosvmp.so 0" />
+				<!--
+				<arg line="/c ${project.tool}/dex.bat ${project.tool} ${project.dex} ${project.temp}" />
+				<arg line="/c exit" />
+				-->
+			</exec>
+			<!-- new -->
+			<copy file="${project.tool}/tmp/classes.dex.de" tofile="${project.temp}/encode.dex" />	
+			
+			<!--
+			<delete>
+				<fileset file="${project.dex}/classes.dex" />
+			</delete>
+			-->
+			
+			<exec dir ="${project.tool}" executable ="cmd">
+			<!-- new -->
+				<arg line="/c java -jar fix.jar tmp/classes.dex classes.dex tmp/output.dex" />
+				<!--
+				<arg line="/c ${project.tool}/reconfig.bat ${project.tool} ${project.xml} ${project.xml}" />
+				<arg line="/c exit" />
+				-->
+			</exec>
+			<!--
+			<copy file="${project.tool}/classes.dex" tofile="${project.dex}/classes.dex" />
+			<move file="${project.temp}/encode.dex" tofile="${project.encodefilepath}/encode.dex" failonerror="false"/>	
+			<echo message="-encrypt-dex project.is.encrypt_old = true end" />
+			-->
+			<!-- new -->
+			<copy file="${project.tool}/tmp/output.dex" tofile="${project.temp}/dx" />
+				<copy file="${project.tool}/art" tofile="${project.temp}/art" />
+				<copy file="${project.tool}/artl" tofile="${project.temp}/artl" />
+				<copy file="${project.tool}/classes.dex" todir="${project.dex}" />
+				<exec dir ="${project.tool}" executable ="cmd">
+					<arg line="/c ${project.tool}/reconfig.bat ${project.tool} ${project.xml} ${project.xml}" />
+					<arg line="/c exit" />
+				</exec>
+				
+				<echo message="-encrypt-dex project.is.encrypt_old = true end" />
+			
+	</target>
+	
+   <target name="-md5" depends="-dex ,-encrypt-dex">
+       <!-- Remove md5 +++++++++++++++++++++++++++++++++++++
+        <exec dir="${basedir}" executable="python" failonerror="true">
+            <arg value="setmd5.py"/>
+        </exec>
+         -->
+    </target>
+	
+	<!--
+    <target name="-md5" depends="-dex">
+        <exec dir="${basedir}" executable="python" failonerror="true">
+            <arg value="setmd5.py"/>
+        </exec>
+    </target>
+	-->
+    <target name="-rebuild" depends="-md5">
+        <!-- Remove Cocos2d Build ++++++++++++++++++++++++++++++
+        <exec dir="${basedir}" executable="python" failonerror="true">
+            <arg value="${basedir}/build_native.py"/>
+        </exec>
+		 -->
+		<copy file="${project.tool}/libchaosvmp.so" tofile="${project.lib}/armeabi-v7a/libchaosvmp.so" />
+		
+    </target>
+    
+    
+   <target name="-dexpackage" depends="-package-resources">
+        <!-- only package apk if *not* a library project -->
+        <do-only-if-not-library elseText="Library project: do not package apk..." >
+            <if condition="${build.is.instrumented}">
+                <then>
+                    <package-helper>
+                        <extra-jars>
+                            <!-- Injected from external file -->
+                            <jarfile path="${emma.dir}/emma_device.jar" />
+                        </extra-jars>
+                    </package-helper>
+                </then>
+                <else>
+                    <package-helper />
+                </else>
+            </if>
+        </do-only-if-not-library>
+    </target>
+
+   <target name="dexrelease"
+                depends="-set-release-mode, -release-obfuscation-check, -rebuild ,-dexpackage, -post-package, -release-prompt-for-password, -release-nosign, -release-sign, -post-build"
+                description="Builds the application in release mode.">
+    </target>
+   
+   <target name= "to_apk" depends= "clean">
+       <antcall target = "dexrelease"/>
+       
+
+       <!-- save game info log for setting -->
+       <antcall target = "saveGameInfoLog"/>
+   </target>
+   
+   <tstamp>
+       <format property = "nowTime" pattern="yyyy_MM_dd_HH_mm_ss"/>
+   </tstamp>
+   <tstamp>
+       <format property = "dayTime" pattern="yyyy_MM_dd"/>
+   </tstamp>
+   
+   <available file="${basedir}/assets/Charge.xml"  property="cm.charge.found"/>
+   <available file="${basedir}/assets/premessable.txt"  property="cm.premessable.found"/>
+   <available file="${basedir}/src/mmiap.xml"  property="cmmm.mmiap.found"/>
+   <available file="${basedir}/src/CopyrightDeclaration.xml"  property="cmmm.copyrightdeclaration.found"/>
+   <available file="${basedir}/bin/classes.dex"  property="cm.dex.found"/>
+   
+   <target name="getchargeMd5" if="cm.charge.found">
+       <checksum file="${basedir}/assets/Charge.xml" property="chargeMD5"/>
+   </target>
+   
+   <target name="getdexMd5" if="cm.dex.found">
+       <checksum file="${basedir}/bin/classes.dex" property="dexMD5"/>
+   </target>
+   
+   <target name="getPremessable" if="cm.premessable.found">
+       <loadfile property="unicom.premessable" srcFile="${basedir}/assets/premessable.txt"/>
+   </target>
+
+   <target name="getmmiapMd5" if="cmmm.mmiap.found">
+       <checksum file="${basedir}/src/mmiap.xml" property="mmiapMD5"/>
+   </target>
+
+   <target name="getcopyrightdMd5" if="cmmm.copyrightdeclaration.found">
+       <checksum file="${basedir}/src/CopyrightDeclaration.xml" property="copyrightMD5"/>
+   </target>
+   
+   <target name="saveGameInfoLog" depends="getchargeMd5,getPremessable,getdexMd5,getmmiapMd5,getcopyrightdMd5">
+       <property name="apk.dir" value="${out.absolute.dir}/../../../apk/${dayTime}/" />
+       <xpath input="AndroidManifest.xml" expression="/manifest/@android:versionCode" output="apk.version.code" default="0"/>
+       <xpath input="AndroidManifest.xml" expression="/manifest/@android:versionName" output="apk.version.name"/>
+
+       <xpath input="AndroidManifest.xml" expression="/manifest/application/meta-data[@android:name='wlss_channel']/@android:value" output="game_channel" default="0"/>
+       <xpath input="AndroidManifest.xml" expression="/manifest/application/meta-data[@android:name='wlss_name']/@android:value" output="game_channel_name" default="0"/>
+       <xpath input="AndroidManifest.xml" expression="/manifest/application/meta-data[@android:name='EGAME_CHANNEL']/@android:value" output="ctchannel" default="0"/>
+       <xpath input="AndroidManifest.xml" expression="/manifest/application/meta-data[@android:name='cpId']/@android:value" output="unicom.cpid" default="0"/>
+       <xpath input="AndroidManifest.xml" expression="/manifest/application/meta-data[@android:name='cpCode']/@android:value" output="unicom.cpcode" default="0"/>
+       <xpath input="AndroidManifest.xml" expression="/manifest/application/meta-data[@android:name='AppId']/@android:value" output="unicom.appid" default="0"/>
+       <xpath input="AndroidManifest.xml" expression="/manifest/application/meta-data[@android:name='cukey']/@android:value" output="unicom.key" default="0"/>
+       <xpath input="AndroidManifest.xml" expression="/manifest/application/meta-data[@android:name='ck_app_key']/@android:value" output="ck.appkey" default="0"/>
+       <xpath input="AndroidManifest.xml" expression="/manifest/application/meta-data[@android:name='ck_secret_key']/@android:value" output="ck.secretkey" default="0"/>
+       <xpath input="AndroidManifest.xml" expression="/manifest/application/meta-data[@android:name='flurry_appkey']/@android:value" output="flurry.appKey" default="0"/>
+       <xpath input="AndroidManifest.xml" expression="/manifest/application/meta-data[@android:name='countly_appkey']/@android:value" output="countly.appkey" default="0"/>
+       <xpath input="AndroidManifest.xml" expression="/manifest/application/meta-data[@android:name='coco_cid']/@android:value" output="coco.cid" default=""/>
+       <xpath input="AndroidManifest.xml" expression="/manifest/application/meta-data[@android:name='coco_pid']/@android:value" output="coco.pid" default="0"/>
+       
+       <propertyregex property="game_channel_new" input="${game_channel}" regexp="channel\:" replace="" global="true" defaultValue ="xxxx"/>
+      <!--  <propertyregex property="game_channel_name_new" input="${game_channel_name}" regexp="channel_name\:" replace="" global="true" defaultValue ="xxxx"/> -->
+       <propertyregex property="ctchannel_new" input="${ctchannel}" regexp="channel\:" replace="" global="true" defaultValue ="xxxx"/>
+       <propertyregex property="unicom.cpid_new" input="${unicom.cpid}" regexp="cpId\:" replace="" global="true" defaultValue ="xxxx"/>
+       <propertyregex property="unicom.cpcode_new" input="${unicom.cpcode}" regexp="cpCode\:" replace="" global="true" defaultValue ="xxxx"/>
+       <propertyregex property="unicom.appid_new" input="${unicom.appid}" regexp="AppId\:" replace="" global="true" defaultValue ="xxxx"/>
+       
+       <move file="${basedir}/bin/${ant.project.name}-release.apk" tofile="${apk.dir}/${ant.project.name}_${game_channel_new}_${game_channel_name}_v_${apk.version.name}_${apk.version.code}_${nowTime}.apk" />
+       <delete file="${basedir}/bin/${ant.project.name}-release.apk"/>
+
+       <propertyfile file="${apk.dir}/${ant.project.name}_${game_channel_new}_${game_channel_name}_v_${apk.version.name}_${apk.version.code}_${nowTime}.txt">
+           <entry  key="channel" value="${game_channel_new}"/>
+           <entry  key="channel_name" value="${game_channel_name}"/>
+           <entry  key="ctchannel" value="${ctchannel_new}"/>
+           <entry  key="unicon.cpid" value="${unicom.cpid_new}"/>
+           <entry  key="unicom.cpcode" value="${unicom.cpcode_new}"/>
+           <entry  key="unicom.appid" value="${unicom.appid_new}"/>
+           <entry  key="unicom.key" value="${unicom.key}"/>
+           <entry  key="unicom.premessable" value="${unicom.premessable}"/>
+           <entry  key="cm.chargeMd5" value="${chargeMD5}"/>
+           <entry  key="ck.appkey" value="${ck.appkey}"/>
+           <entry  key="ck.secretkey" value="${ck.secretkey}"/>
+           <entry  key="flurry.appKey" value="${flurry.appKey}"/>
+           <entry  key="countly.appkey" value="${countly.appkey}"/>
+           <entry  key="coco.cid" value="${coco.cid}"/>
+           <entry  key="coco.pid" value="${coco.pid}"/>
+           <entry  key="dexMD5" value="${dexMD5}"/>
+           <entry  key="cmmm.mmiapMD5" value="${mmiapMD5}"/>
+           <entry  key="cmmm.opyrightdMd5" value="${copyrightMD5}"/>
+       </propertyfile>
+   </target>
+</project>
