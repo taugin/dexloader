@@ -6,22 +6,18 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlPullParserFactory;
 
 import android.app.Application;
-import android.app.Instrumentation;
 import android.content.Context;
-import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
-import android.content.pm.PackageManager.NameNotFoundException;
+import android.content.res.Configuration;
 import android.content.res.XmlResourceParser;
-import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Base64;
 import dalvik.system.DexClassLoader;
@@ -31,7 +27,10 @@ public class LoaderApp extends Application {
     private static final String appkey = "APPLICATION_CLASS_NAME";
     private static final String LODER_CONFIG_FILE = "loaderconfig.dat";
     private String mEncryptionDexFile = "classes.dex";
+    private DexClassLoader mDexClassLoader;
+    private Application mApp;
 
+    /*
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(base);
         try {
@@ -56,19 +55,20 @@ public class LoaderApp extends Application {
                     "android.app.ActivityThread", currentActivityThread,
                     "mPackages");
             WeakReference wr = (WeakReference) mPackages.get(packageName);
-            DexClassLoader dLoader = new DexClassLoader(dexPath, odexPath,
+            mDexClassLoader = new DexClassLoader(dexPath, odexPath,
                     libPath, (ClassLoader) RefInvoke.getFieldOjbect(
                             "android.app.LoadedApk", wr.get(), "mClassLoader"));
             RefInvoke.setFieldOjbect("android.app.LoadedApk", "mClassLoader",
-                    wr.get(), dLoader);
+                    wr.get(), mDexClassLoader);
 
         } catch (Exception e) {
             Log.d(Log.TAG, "error : " + e);
         }
-    }
+    }*/
 
+    /*
     public void onCreate() {
-
+        super.onCreate();
         // 如果源应用配置有Appliction对象，则替换为源应用Applicaiton，以便不影响源程序逻辑。
         String appClassName = null;
         try {
@@ -130,7 +130,90 @@ public class LoaderApp extends Application {
                     "mContext", localProvider, app);
         }
         Log.d(Log.TAG, "appClassName : " + appClassName);
+        Log.d(Log.TAG, "app : " + app);
         app.onCreate();
+    }*/
+    public void onCreate() {
+        super.onCreate();
+        setApkClassLoader();
+        try {
+            String str2 = getPackageManager().getApplicationInfo(
+                    getPackageName(), PackageManager.GET_META_DATA).metaData
+                    .getString(appkey);
+            mApp = ((Application) getClassLoader().loadClass(str2)
+                    .newInstance());
+            Method localMethod = Class
+                    .forName("android.content.ContextWrapper")
+                    .getDeclaredMethod("attachBaseContext",
+                            new Class[] { Context.class });
+            localMethod.setAccessible(true);
+            localMethod.invoke(this.mApp, new Object[] { this });
+            localMethod.setAccessible(false);
+            mApp.onCreate();
+        } catch (Exception e) {
+            Log.d(Log.TAG, "error : " + e);
+        }
+    }
+
+    public void setApkClassLoader() {
+        try {
+            String odexPath = getDir("odex_path", MODE_PRIVATE)
+                    .getAbsolutePath();
+            parseLoaderConfig();
+            String dexPath = generateSrcDex();
+            String libPath = getApplicationInfo().nativeLibraryDir;
+            Log.d(Log.TAG, "dexPath : " + dexPath);
+            Log.d(Log.TAG, "libPath : " + libPath);
+            Log.d(Log.TAG, "odexPath : " + odexPath);
+            if (TextUtils.isEmpty(dexPath)) {
+                Log.d(Log.TAG, "Fail to Write " + mEncryptionDexFile);
+                System.exit(0);
+            }
+            Class localClass = Class.forName("android.app.ActivityThread");
+            Object localObject1 = localClass.getMethod("currentActivityThread",
+                    new Class[0]).invoke(null, new Object[0]);
+            Field localField1 = localClass.getDeclaredField("mPackages");
+            localField1.setAccessible(true);
+            Object localObject2 = localField1.get(localObject1);
+            localField1.setAccessible(false);
+            Method localMethod = localObject2.getClass().getMethod("get",
+                    new Class[] { Object.class });
+            Object[] arrayOfObject = new Object[1];
+            arrayOfObject[0] = getPackageName();
+            Object localObject3 = ((WeakReference) localMethod.invoke(
+                    localObject2, arrayOfObject)).get();
+            Field localField2 = localObject3.getClass().getDeclaredField(
+                    "mClassLoader");
+            mDexClassLoader = new DexClassLoader(dexPath, odexPath, libPath,
+                    getClassLoader());
+            localField2.setAccessible(true);
+            localField2.set(localObject3, mDexClassLoader);
+            localField2.setAccessible(false);
+            return;
+        } catch (Exception e) {
+            Log.e(Log.TAG, "error : " + e);
+        }
+    }
+
+    public void onLowMemory() {
+        super.onLowMemory();
+        if (mApp != null) {
+            mApp.onLowMemory();
+        }
+    }
+
+    public void onConfigurationChanged(Configuration paramConfiguration) {
+        super.onConfigurationChanged(paramConfiguration);
+        if (mApp != null) {
+            mApp.onConfigurationChanged(paramConfiguration);
+        }
+    }
+
+    public void onTerminate() {
+        super.onTerminate();
+        if (mApp != null) {
+            mApp.onTerminate();
+        }
     }
 
     private void parseLoaderConfig() {
