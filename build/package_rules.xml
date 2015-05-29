@@ -140,9 +140,13 @@
                 file="${dex_loader_file}"
                 prefix="" />
         </zip>
+        <property name="data_jar" location="bin/_dex_data"/>
+        <jar destfile="${data_jar}">
+            <fileset file="${intermediate.dex.file}"/>
+        </jar>
         <zip destfile="${out.packaged.file}" update="true">
             <zipfileset
-                file="${intermediate.dex.file}"
+                file="${data_jar}"
                 prefix="assets" />
         </zip>
     </target>
