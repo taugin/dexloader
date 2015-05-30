@@ -16,13 +16,14 @@ import android.content.res.XmlResourceParser;
 import android.util.Base64;
 
 public class DexUtil {
-    private static final String LODER_CONFIG_FILE = "loaderconfig.dat";
 
     public static final String APPLICATION_KEY = "APPLICATION_CLASS_NAME";
     public static final String APP_DEX_PATH = "dex_path";
 
-    private String mEncryptionJarFile = "_dex_data";
-    private String mDestJarFile = "_dex_data.jar";
+    private static final String DECRYPT_JAR_FILE = "decryptdata.jar";
+    private static final String LODER_CONFIG_FILE = "loaderconfig.dat";
+
+    private String mEncryptionJarFile = "encryptdata.dat";
 
     private Context mContext;
 
@@ -48,12 +49,12 @@ public class DexUtil {
         try {
             // mContext.deleteFile(APP_DEX_PATH);
             String srcDexPath = mContext.getDir(APP_DEX_PATH, Application.MODE_PRIVATE)
-                    .getAbsolutePath() + File.separator + mDestJarFile;
+                    .getAbsolutePath() + File.separator + DECRYPT_JAR_FILE;
             InputStream is = mContext.getAssets().open(mEncryptionJarFile);
             File file = new File(srcDexPath);
             if (file.exists()) {
                 if (file.length() == is.available()) {
-                    Log.d(Log.TAG, mDestJarFile + " is exsit ...");
+                    Log.d(Log.TAG, DECRYPT_JAR_FILE + " is exsit ...");
                     is.close();
                     return srcDexPath;
                 }

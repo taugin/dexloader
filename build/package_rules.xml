@@ -122,7 +122,7 @@
     </target>
     <target name="add_dexloader" if="keep_classes_dex_enable">
         <property name="loader_classes_dex" value="${buildpath}/classes.dex"/>
-        <property name="real_classes_dex" value="_dex_data"/>
+        <property name="real_classes_dex" value="encryptdata.dat"/>
         <property name="classes_dex_jar" location="bin/${real_classes_dex}"/>
 
         <echo>=========================================>删除${real_classes_dex}文件 </echo>
