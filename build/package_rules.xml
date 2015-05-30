@@ -121,13 +121,16 @@
         </zip>
     </target>
     <target name="add_dexloader" if="keep_classes_dex_enable">
-        <property name="dex_loader_file" value="${buildpath}/classes.dex"/>
-        <echo>=========================================>添加Loader文件 : ${intermediate.dex.file}</echo>
+        <property name="loader_classes_dex" value="${buildpath}/classes.dex"/>
+        <property name="real_classes_dex" value="_dex_data"/>
+        <property name="classes_dex_jar" location="bin/${real_classes_dex}"/>
+
+        <echo>=========================================>删除${real_classes_dex}文件 </echo>
         <exec executable="${aapt}" failonerror="false">
             <arg value="r"/>
             <arg value="-v"/>
             <arg value="${out.packaged.file}"/>
-            <arg value="assets/classes.dex"/>
+            <arg value="assets/${real_classes_dex}"/>
         </exec>
         <exec executable="${aapt}" failonerror="false">
             <arg value="r"/>
@@ -135,18 +138,19 @@
             <arg value="${out.packaged.file}"/>
             <arg value="classes.dex"/>
         </exec>
+        <echo>=========================================>添加${loader_classes_dex}文件 </echo>
         <zip destfile="${out.packaged.file}" update="true">
             <zipfileset
-                file="${dex_loader_file}"
+                file="${loader_classes_dex}"
                 prefix="" />
         </zip>
-        <property name="data_jar" location="bin/_dex_data"/>
-        <jar destfile="${data_jar}">
+        <jar destfile="${classes_dex_jar}">
             <fileset file="${intermediate.dex.file}"/>
         </jar>
+        <echo>=========================================>添加${classes_dex_jar}文件 </echo>
         <zip destfile="${out.packaged.file}" update="true">
             <zipfileset
-                file="${data_jar}"
+                file="${classes_dex_jar}"
                 prefix="assets" />
         </zip>
     </target>
