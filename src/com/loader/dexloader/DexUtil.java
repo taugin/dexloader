@@ -58,6 +58,7 @@ public class DexUtil {
                     is.close();
                     return srcDexPath;
                 }
+                file.delete();
             }
             Log.d(Log.TAG, "Copy dexfile ...");
 
