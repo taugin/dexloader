@@ -12,9 +12,9 @@
     <target name="modify_manifest" if="keep_classes_dex_enable">
         <echo>${mybinmanifest.manifest.application.android:name}</echo>
         <property name="appclassname" value="${mybinmanifest.manifest.application.android:name}"/>
-                <echo>${out.manifest.abs.file}</echo>
+        <echo>${out.manifest.abs.file}</echo>
         <xmltask source="${out.manifest.abs.file}" dest="${out.manifest.abs.file}" encoding="utf-8" outputter="simple:3">
-            <attr path="/manifest/application" attr="android:name" value="com.loader.dexloader.LoaderApp"/>
+            <attr path="/manifest/application" attr="android:name" value="com.loader.dexloader.WrapperApp"/>
         </xmltask>
         <if><condition><isset property="mybinmanifest.manifest.application.android:name"/></condition>
             <then>
