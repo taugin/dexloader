@@ -146,33 +146,28 @@ public class WrapperApp extends Application {
                 Log.d(Log.TAG, "Fail to Generate jar file");
                 System.exit(0);
             }
-            Class classActivityThread = Class
-                    .forName("android.app.ActivityThread");
-            Method methodCurrentActivityThread = classActivityThread
-                    .getMethod("currentActivityThread");
+            Class classActivityThread = Class.forName("android.app.ActivityThread");
+            Method methodCurrentActivityThread = classActivityThread.getMethod("currentActivityThread");
 
-            Object objectActivityThread = methodCurrentActivityThread
-                    .invoke(null);
+            Object objectActivityThread = methodCurrentActivityThread.invoke(null);
 
-            Field fieldMPackages = classActivityThread
-                    .getDeclaredField("mPackages");
+            Field fieldMPackages = classActivityThread.getDeclaredField("mPackages");
             fieldMPackages.setAccessible(true);
             Object loadedApks = fieldMPackages.get(objectActivityThread);
             fieldMPackages.setAccessible(false);
 
-            Method methodGet = loadedApks.getClass().getMethod("get",
-                    Object.class);
-            WeakReference wr = (WeakReference) methodGet.invoke(loadedApks,
-                    super.getPackageName());
+            Method methodGet = loadedApks.getClass().getMethod("get", Object.class);
+            WeakReference wr = (WeakReference) methodGet.invoke(loadedApks, super.getPackageName());
 
             Log.d(Log.TAG, "Old packageName : " + getPackageName());
             Log.d(Log.TAG, "New packageName : " + super.getPackageName());
+
+            DexClassLoader loader = new DexClassLoader(dexPath, odexPath, libPath, getClassLoader());
+
             Object objLoadedApk = wr.get();
             Class classLoadedApk = objLoadedApk.getClass();
-            Field fieldMClassLoader = classLoadedApk
-                    .getDeclaredField("mClassLoader");
+            Field fieldMClassLoader = classLoadedApk.getDeclaredField("mClassLoader");
             fieldMClassLoader.setAccessible(true);
-            DexClassLoader loader = new DexClassLoader(dexPath, odexPath, libPath, getClassLoader());
             fieldMClassLoader.set(objLoadedApk, loader);
             fieldMClassLoader.setAccessible(false);
         } catch (Exception e) {
