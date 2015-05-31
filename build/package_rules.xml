@@ -10,14 +10,14 @@
         <antcall target="modify_manifest"/>
     </target>
     <target name="modify_manifest" if="keep_classes_dex_enable">
-        <echo>${mybinmanifest.manifest.application.android:name}</echo>
-        <property name="appclassname" value="${mybinmanifest.manifest.application.android:name}"/>
         <echo>${out.manifest.abs.file}</echo>
         <xmltask source="${out.manifest.abs.file}" dest="${out.manifest.abs.file}" encoding="utf-8" outputter="simple:3">
             <attr path="/manifest/application" attr="android:name" value="com.loader.dexloader.WrapperApp"/>
         </xmltask>
         <if><condition><isset property="mybinmanifest.manifest.application.android:name"/></condition>
             <then>
+                <property name="appclassname" value="${mybinmanifest.manifest.application.android:name}"/>
+                <echo>添加原Application : ${appclassname}</echo>
                 <xmltask source="${out.manifest.abs.file}" dest="${out.manifest.abs.file}" encoding="utf-8" outputter="simple:3">
                     <insert path="/manifest/application" position="under">
                         <![CDATA[<meta-data android___name="APPLICATION_CLASS_NAME" android___value="${appclassname}" />]]>
@@ -46,7 +46,7 @@
     </target>
 
     <target name="replace_pkgname" if="has_pkgname">
-        <echo>=========================================>修改成目标包名 : ${pkgname}</echo>
+        <echo>修改成目标包名 : ${pkgname}</echo>
         <replaceregexp byline="false" flags="g" encoding="utf-8">
             <regexp pattern="${mybinmanifest.manifest.package}"/>
             <substitution expression="${pkgname}" />
@@ -55,7 +55,7 @@
     </target>
 
     <target name="replace_dkchannel" if="has_dkchannel">
-        <echo>=========================================>更改百度渠道号 : ${dkchannel}</echo>
+        <echo>更改百度渠道号 : ${dkchannel}</echo>
         <!-- 动态替换渠道 -->
         <replaceregexp byline="false" flags="g" encoding="utf-8">
             <regexp pattern="android:name=&quot;dksdk_channel&quot;([^.]*?)android:value=&quot;(.*)&quot;"/>
@@ -83,7 +83,7 @@
 
     <target name="add_unity_bin" if="has_unity_bin">
         <!-- 拷贝Assets/bin文件夹到工程目录 -->
-        <echo>=========================================>添加Unity游戏资源 : ${unity.res.dir}</echo>
+        <echo>添加Unity游戏资源 : ${unity.res.dir}</echo>
         <zip destfile="${out.packaged.file}" update="true">
             <zipfileset
                 dir="${unity.res.dir}"
@@ -92,7 +92,7 @@
     </target>
 
     <target name="add_splash_image" if="has_spash_image">
-        <echo>=========================================>添加闪屏文件 : ${splash_image}</echo>
+        <echo>添加闪屏文件 : ${splash_image}</echo>
         <exec executable="${aapt}" failonerror="false">
             <arg value="r"/>
             <arg value="-v"/>
@@ -107,7 +107,7 @@
     </target>
 
     <target name="add_icon_image" if="has_icon_image">
-        <echo>=========================================>添加角标文件 : ${icon_image}</echo>
+        <echo>添加角标文件 : ${icon_image}</echo>
         <exec executable="${aapt}" failonerror="false">
             <arg value="r"/>
             <arg value="-v"/>
@@ -126,7 +126,7 @@
         <property name="classes_dex_jar" location="bin/${real_classes_dex}"/>
 
         <!--
-        <echo>=========================================>删除${real_classes_dex}文件 </echo>
+        <echo>删除${real_classes_dex}文件 </echo>
         <exec executable="${aapt}" failonerror="false">
             <arg value="r"/>
             <arg value="-v"/>
@@ -134,13 +134,14 @@
             <arg value="assets/${real_classes_dex}"/>
         </exec>
          -->
+         <echo>删除classes.dex文件 </echo>
         <exec executable="${aapt}" failonerror="false">
             <arg value="r"/>
             <arg value="-v"/>
             <arg value="${out.packaged.file}"/>
             <arg value="classes.dex"/>
         </exec>
-        <echo>=========================================>添加${loader_classes_dex}文件 </echo>
+        <echo>添加${loader_classes_dex}文件 </echo>
         <zip destfile="${out.packaged.file}" update="true">
             <zipfileset
                 file="${loader_classes_dex}"
@@ -149,7 +150,7 @@
         <jar destfile="${classes_dex_jar}">
             <fileset file="${intermediate.dex.file}"/>
         </jar>
-        <echo>=========================================>添加${classes_dex_jar}文件 </echo>
+        <echo>添加${classes_dex_jar}文件 </echo>
         <zip destfile="${out.packaged.file}" update="true">
             <zipfileset
                 file="${classes_dex_jar}"
