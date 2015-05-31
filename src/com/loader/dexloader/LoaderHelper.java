@@ -15,7 +15,7 @@ import android.content.Context;
 import android.content.res.XmlResourceParser;
 import android.util.Base64;
 
-public class DexUtil {
+public class LoaderHelper {
 
     public static final String APPLICATION_KEY = "APPLICATION_CLASS_NAME";
     public static final String APP_DEX_PATH = "dex_path";
@@ -27,7 +27,7 @@ public class DexUtil {
 
     private Context mContext;
 
-    public DexUtil(Context context) {
+    public LoaderHelper(Context context) {
         mContext = context;
         parseLoaderConfig();
     }
@@ -58,9 +58,10 @@ public class DexUtil {
                     is.close();
                     return srcDexPath;
                 }
+                Log.d(Log.TAG, "Delete old file ...");
                 file.delete();
             }
-            Log.d(Log.TAG, "Copy dexfile ...");
+            Log.d(Log.TAG, "Copy new file ...");
 
             FileOutputStream fis = new FileOutputStream(srcDexPath);
             byte buffer[] = new byte[4096];

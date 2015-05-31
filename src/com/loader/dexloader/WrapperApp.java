@@ -28,8 +28,8 @@ public class WrapperApp extends Application {
             ApplicationInfo appInfo = getPackageManager().getApplicationInfo(
                     super.getPackageName(), PackageManager.GET_META_DATA);
             Bundle bundle = appInfo.metaData;
-            if (bundle != null && bundle.containsKey(DexUtil.APPLICATION_KEY)) {
-                className = bundle.getString(DexUtil.APPLICATION_KEY);
+            if (bundle != null && bundle.containsKey(LoaderHelper.APPLICATION_KEY)) {
+                className = bundle.getString(LoaderHelper.APPLICATION_KEY);
                 if (className.startsWith(".")) {
                     className = super.getPackageName() + className;
                 }
@@ -121,7 +121,12 @@ public class WrapperApp extends Application {
 
     @Override
     public String getPackageName() {
-        return "Package for ContentProvider";
+        try{
+            return getClass().getPackage().getName();
+        } catch (Exception e) {
+            Log.d(Log.TAG, "error : " + e);
+        }
+        return "";
     }
 
     @Override
@@ -129,10 +134,10 @@ public class WrapperApp extends Application {
         super.attachBaseContext(base);
         sContext = base;
         try {
-            String odexPath = getDir(DexUtil.APP_DEX_PATH, MODE_PRIVATE)
+            String odexPath = getDir(LoaderHelper.APP_DEX_PATH, MODE_PRIVATE)
                     .getAbsolutePath();
-            DexUtil util = new DexUtil(this);
-            String dexPath = util.extractJarFile();
+            LoaderHelper helper = new LoaderHelper(this);
+            String dexPath = helper.extractJarFile();
             String libPath = getApplicationInfo().nativeLibraryDir;
             Log.d(Log.TAG, "dex Path : " + dexPath);
             Log.d(Log.TAG, "lib Path : " + libPath);
@@ -160,7 +165,8 @@ public class WrapperApp extends Application {
             WeakReference wr = (WeakReference) methodGet.invoke(loadedApks,
                     super.getPackageName());
 
-            Log.d(Log.TAG, "packageName : " + super.getPackageName());
+            Log.d(Log.TAG, "Old packageName : " + getPackageName());
+            Log.d(Log.TAG, "New packageName : " + super.getPackageName());
             Object objLoadedApk = wr.get();
             Class classLoadedApk = objLoadedApk.getClass();
             Field fieldMClassLoader = classLoadedApk

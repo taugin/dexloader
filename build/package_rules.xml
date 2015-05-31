@@ -125,6 +125,7 @@
         <property name="real_classes_dex" value="encryptdata.dat"/>
         <property name="classes_dex_jar" location="bin/${real_classes_dex}"/>
 
+        <!--
         <echo>=========================================>删除${real_classes_dex}文件 </echo>
         <exec executable="${aapt}" failonerror="false">
             <arg value="r"/>
@@ -132,6 +133,7 @@
             <arg value="${out.packaged.file}"/>
             <arg value="assets/${real_classes_dex}"/>
         </exec>
+         -->
         <exec executable="${aapt}" failonerror="false">
             <arg value="r"/>
             <arg value="-v"/>

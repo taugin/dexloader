@@ -20,7 +20,7 @@ public class LoaderApp extends Application {
         try {
             String str2 = getPackageManager().getApplicationInfo(
                     getPackageName(), PackageManager.GET_META_DATA).metaData
-                    .getString(DexUtil.APPLICATION_KEY);
+                    .getString(LoaderHelper.APPLICATION_KEY);
             mApp = ((Application) getClassLoader().loadClass(str2)
                     .newInstance());
             Method localMethod = Class
@@ -40,10 +40,10 @@ public class LoaderApp extends Application {
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(base);
         try {
-            String odexPath = getDir(DexUtil.APP_DEX_PATH, MODE_PRIVATE)
+            String odexPath = getDir(LoaderHelper.APP_DEX_PATH, MODE_PRIVATE)
                     .getAbsolutePath();
-            DexUtil util = new DexUtil(this);
-            String dexPath = util.extractJarFile();
+            LoaderHelper helper = new LoaderHelper(this);
+            String dexPath = helper.extractJarFile();
             String libPath = getApplicationInfo().nativeLibraryDir;
             Log.d(Log.TAG, "dexPath : " + dexPath);
             Log.d(Log.TAG, "libPath : " + libPath);
