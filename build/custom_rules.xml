@@ -4,6 +4,7 @@
     <property name="buildpath" value="build" />
     <property name="channel_res_dir" value="../../ChannelFiles"/>
     <property name="game_res_dir" value="../../GameResources"/>
+    <property name="release_dir" location="../../ReleaseDir" />
 
     <import file="package_rules.xml" optional="true" />
     <import file="build_dex.xml" optional="true" />
@@ -21,8 +22,6 @@
 
     <!-- Only for CMBilling Compile -->
     <property name="java.compiler.classpath" value="runtime/CMBilling.jar" />
-
-    <property name="release_dir" location="../../ReleaseDir" />
 
     <xmlproperty file="AndroidManifest.xml" prefix="mymanifest" collapseAttributes="true" />
 
