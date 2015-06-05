@@ -1,0 +1,60 @@
+标 题: 【原创】Android中JNI方式调用Jar包
+作 者: 蟑螂一号
+时 间: 2013-10-10,10:44:03
+   最近在研究DexClassLoader加载jar包，在帖子“使用DexClassLoader调用jar包”使用的是Java方式来加载jar包，并调用jar包中的方法，完成相关功能。现在我将通过JNI方式实现动态加载jar的成果和大家分享一下。
+  以下为关键代码，经手机测试正常运行：
+  ///java调用的jni方法
+/*参数说明：
+ *  path1:       jar存储路径
+ *  path2：                经过优化后的dex存存放路径
+ *  className：    需要调用jar包中的类名
+ *  methodName： 需要调用的类中的静态方法
+ *  注意：path1 和path2将会作为DexClassLoader构造函数中的第一、第二参数
+ *  我在java中定义的native方法为：public static native void callHook(String dexPath,String optPath,String className,String methodName);
+*/
+static void com_mtn_javainject_CopyFile_callHook(JNIEnv *env, jclass,jstring path1, jstring path2, jstring className, jstring methodName) {
+  //找到ClassLoader类
+  jclass classloaderClass = env->FindClass("java/lang/ClassLoader");
+  //找到ClassLoader类中的静态方法getSystemClassLoader
+  jmethodID getsysloaderMethod = env->GetStaticMethodID(classloaderClass, "getSystemClassLoader","()Ljava/lang/ClassLoader;");
+  //调用ClassLoader中的getSystemClassLoader方法，返回ClassLoader对象
+  jobject loader =env->CallStaticObjectMethod(classloaderClass,getsysloaderMethod);
+
+  //jar包存放位置
+  jstring dexpath = path1;
+  //优化后的jar包存放位置
+  jstring dex_odex_path = path2;
+  //找到DexClassLoader类
+  jclass dexLoaderClass = env->FindClass("dalvik/system/DexClassLoader");
+  //获取DexClassLoader的构造函数ID
+  jmethodID initDexLoaderMethod =env->GetMethodID(dexLoaderClass, "<init>","(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/ClassLoader;)V");
+  //新建一个DexClassLoader对象
+  jobject dexLoader =env->NewObject(dexLoaderClass,initDexLoaderMethod, dexpath, dex_odex_path, NULL, loader);
+
+  //找到DexClassLoader中的方法findClass
+  jmethodID findclassMethod = env->GetMethodID(dexLoaderClass,"findClass", "(Ljava/lang/String;)Ljava/lang/Class;");
+  //如果返回空,那就找DexClassLoader的loadClass方法
+  //说明：老版本的SDK中DexClassLoader有findClass方法，新版本SDK中是loadClass方法
+    if(NULL==findclassMethod)
+    {
+          //
+           findclassMethod = env->GetMethodID(dexLoaderClass,"loadClass", "(Ljava/lang/String;)Ljava/lang/Class;");
+    }
+    //存储需要调用的类
+  jstring javaClassName = className;
+  //调用DexClassLoader的loadClass方法，加载需要调用的类
+  jclass javaClientClass=(jclass)env->CallObjectMethod(dexLoader,findclassMethod,javaClassName);
+
+  //将jstring类型的方法名转换为utf8编码的字符串
+  const char* func =env->GetStringUTFChars(methodName, NULL);
+    //获取加载的类中的方法
+  //
+  jmethodID inject_method = env->GetStaticMethodID(javaClientClass, func, "()V");
+  //调用加载的类中的静态方法
+  env->CallStaticVoidMethod(javaClientClass,inject_method);
+}
+
+  在Java层，native调用代码：
+CopyFile.callHook(dexInternalStoragePath.getAbsolutePath(), optimizedDexOutputPath.getAbsolutePath(), "com.mtn.binder.HookIPhoneSubInfo", "hook");
+
+  以上封装的方法测试验证通过。 
