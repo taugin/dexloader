@@ -1,6 +1,7 @@
 package com.loader.dexloader;
 
 import java.lang.ref.WeakReference;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -12,9 +13,11 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.AssetManager;
+import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.DisplayMetrics;
 import dalvik.system.DexClassLoader;
 
 public class LoaderApp extends Application {
@@ -52,8 +55,6 @@ public class LoaderApp extends Application {
             mOuterContext.setAccessible(true);
             mOuterContext.set(sContext, delegate);
             mOuterContext.setAccessible(false);
-
-            loadRealApkResources(getBaseContext(), contextImplClass);
 
             // 再获取context的mPackageInfo变量对象
             Field mPackageInfoField = contextImplClass
@@ -103,6 +104,8 @@ public class LoaderApp extends Application {
             attach.setAccessible(true);
             attach.invoke(delegate, sContext);
             attach.setAccessible(false);
+
+            loadRealApkResources(sContext, contextImplClass);
             delegate.onCreate();
 
         } catch (NameNotFoundException e) {
@@ -197,31 +200,53 @@ public class LoaderApp extends Application {
             String apkPath = context.getApplicationInfo().sourceDir;
             addAssetPath.invoke(assetManager, apkPath);
             addAssetPath.invoke(assetManager, sDexPath);
+
+            setNewResource(context, assetManager, implClass);
+            // setNewAssets(context, assetManager);
+            Log.d(Log.TAG, "context.getResources().getAssets : " + context.getResources().getAssets());
+            Log.d(Log.TAG, "assetManager : " + assetManager);
+            Log.d(Log.TAG, "getAssets : " + context.getAssets());
+        } catch (Exception e) {
+            Log.d(Log.TAG, "error : " + e);
+        }
+    }
+
+    private void setNewResource(Context context, AssetManager assetManager,
+            Class implClass) {
+        try {
             Resources res = context.getResources();
+            Log.d(Log.TAG, "oldRes : " + res);
+            Class resClass = res.getClass();
+            Constructor  constructor = resClass.getConstructor(AssetManager.class, DisplayMetrics.class, Configuration.class);
+            Resources newRes = (Resources) constructor.newInstance(assetManager,
+                    res.getDisplayMetrics(), res.getConfiguration());
+            Log.d(Log.TAG, "newRes : " + newRes);
+            /*
             Resources newRes = new Resources(assetManager,
                     res.getDisplayMetrics(), res.getConfiguration());
+                    */
+            Field pkInfoField;
 
-            Log.d(Log.TAG, "implClass : " + implClass);
-            Field pkInfoField = implClass.getDeclaredField(
-                    "mPackageInfo");
+            pkInfoField = implClass.getDeclaredField("mPackageInfo");
             pkInfoField.setAccessible(true);
             Object mPackageInfo = pkInfoField.get(context);
             pkInfoField.setAccessible(false);
 
-            setNewAssets(context, assetManager);
-
             Field resField = mPackageInfo.getClass().getDeclaredField(
                     "mResources");
             resField.setAccessible(true);
-            Log.d(Log.TAG, "set New mResources");
+            Log.d(Log.TAG, "set LoadedApk mResources");
             resField.set(mPackageInfo, newRes);
             resField.setAccessible(false);
 
-            Log.d(Log.TAG, "newRes : " + newRes);
+            Field implResField = implClass.getDeclaredField("mResources");
+            implResField.setAccessible(true);
+            Log.d(Log.TAG, "set ContextImpl mResources");
+            implResField.set(context, newRes);
+            implResField.setAccessible(false);
+
+            Log.d(Log.TAG, "context.getResources() : " + context);
             Log.d(Log.TAG, "context.getResources() : " + context.getResources());
-            Log.d(Log.TAG, "context.getResources().getAssets : " + context.getResources().getAssets());
-            Log.d(Log.TAG, "assetManager : " + assetManager);
-            Log.d(Log.TAG, "getAssets : " + context.getAssets());
         } catch (Exception e) {
             Log.d(Log.TAG, "error : " + e);
         }
