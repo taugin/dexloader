@@ -53,7 +53,7 @@ public class LoaderApp extends Application {
             mOuterContext.set(sContext, delegate);
             mOuterContext.setAccessible(false);
 
-            loadPayApkRes(getBaseContext(), contextImplClass);
+            loadRealApkResources(getBaseContext(), contextImplClass);
 
             // 再获取context的mPackageInfo变量对象
             Field mPackageInfoField = contextImplClass
@@ -185,7 +185,7 @@ public class LoaderApp extends Application {
         Log.d(Log.TAG, "lib Path : " + sLibPath);
     }
 
-    private void loadPayApkRes(Context context, Class implClass) {
+    private void loadRealApkResources(Context context, Class implClass) {
         Log.d(Log.TAG, "sDexPath : " + sDexPath);
         if (TextUtils.isEmpty(sDexPath)) {
             return;
@@ -208,13 +208,7 @@ public class LoaderApp extends Application {
             Object mPackageInfo = pkInfoField.get(context);
             pkInfoField.setAccessible(false);
 
-            /*
-            Field assetsField = newRes.getClass().getDeclaredField("mAssets");
-            assetsField.setAccessible(true);
-            Log.d(Log.TAG, "set New mAssets");
-            assetsField.set(newRes, assetManager);
-            assetsField.setAccessible(false);
-            */
+            setNewAssets(context, assetManager);
 
             Field resField = mPackageInfo.getClass().getDeclaredField(
                     "mResources");
@@ -223,10 +217,32 @@ public class LoaderApp extends Application {
             resField.set(mPackageInfo, newRes);
             resField.setAccessible(false);
 
+            Log.d(Log.TAG, "newRes : " + newRes);
+            Log.d(Log.TAG, "context.getResources() : " + context.getResources());
+            Log.d(Log.TAG, "context.getResources().getAssets : " + context.getResources().getAssets());
             Log.d(Log.TAG, "assetManager : " + assetManager);
             Log.d(Log.TAG, "getAssets : " + context.getAssets());
         } catch (Exception e) {
             Log.d(Log.TAG, "error : " + e);
         }
+    }
+
+    private void setNewAssets(Context context, AssetManager assetManager) {
+        try {
+            final String resClass = "android.content.res.Resources";
+            Resources resources = context.getResources();
+            Class className = resources.getClass();
+            while(className != null && !resClass.equals(className.getName())) {
+                className = className.getSuperclass();
+            }
+
+            Field assetsField = className.getDeclaredField("mAssets");
+            assetsField.setAccessible(true);
+            Log.d(Log.TAG, "set New mAssets");
+            assetsField.set(resources, assetManager);
+            assetsField.setAccessible(false);
+        } catch (Exception e) {
+            Log.d(Log.TAG, "error : " + e);
+        } 
     }
 }
