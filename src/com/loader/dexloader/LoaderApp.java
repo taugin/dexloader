@@ -195,8 +195,8 @@ public class LoaderApp extends Application {
             Method addAssetPath = assetManager.getClass().getMethod(
                     "addAssetPath", String.class);
             String apkPath = context.getApplicationInfo().sourceDir;
-            addAssetPath.invoke(assetManager, sDexPath);
             addAssetPath.invoke(assetManager, apkPath);
+            addAssetPath.invoke(assetManager, sDexPath);
             Resources res = context.getResources();
             Resources newRes = new Resources(assetManager,
                     res.getDisplayMetrics(), res.getConfiguration());
