@@ -202,10 +202,7 @@ public class LoaderApp extends Application {
             addAssetPath.invoke(assetManager, sDexPath);
 
             setNewResource(context, assetManager, implClass);
-            // setNewAssets(context, assetManager);
-            Log.d(Log.TAG, "context.getResources().getAssets : " + context.getResources().getAssets());
-            Log.d(Log.TAG, "assetManager : " + assetManager);
-            Log.d(Log.TAG, "getAssets : " + context.getAssets());
+            Log.d(Log.TAG, "current resources : " + context.getResources());
         } catch (Exception e) {
             Log.d(Log.TAG, "error : " + e);
         }
@@ -245,29 +242,8 @@ public class LoaderApp extends Application {
             implResField.set(context, newRes);
             implResField.setAccessible(false);
 
-            Log.d(Log.TAG, "context.getResources() : " + context);
-            Log.d(Log.TAG, "context.getResources() : " + context.getResources());
         } catch (Exception e) {
             Log.d(Log.TAG, "error : " + e);
         }
-    }
-
-    private void setNewAssets(Context context, AssetManager assetManager) {
-        try {
-            final String resClass = "android.content.res.Resources";
-            Resources resources = context.getResources();
-            Class className = resources.getClass();
-            while(className != null && !resClass.equals(className.getName())) {
-                className = className.getSuperclass();
-            }
-
-            Field assetsField = className.getDeclaredField("mAssets");
-            assetsField.setAccessible(true);
-            Log.d(Log.TAG, "set New mAssets");
-            assetsField.set(resources, assetManager);
-            assetsField.setAccessible(false);
-        } catch (Exception e) {
-            Log.d(Log.TAG, "error : " + e);
-        } 
     }
 }
