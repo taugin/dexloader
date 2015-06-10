@@ -27,7 +27,7 @@
     <tstamp><format property="TODAY_CN" pattern="yyyy-MM-dd" locale="zh"/></tstamp> 
     <tstamp><format property="TIME_CN" pattern="yyyy-MM-dd-HH-mm-ss" locale="zh"/></tstamp> 
 
-    <target name="deploy">
+    <target name="deploy" depends="init_release_type">
         <mkdir dir="${release_dir}"/>
         <property name="out.final.file" location="${release_dir}/${apk_name}_R_${TIME_CN}_v${mymanifest.manifest.android:versionName}.apk" />
         <antcall target="clean" />
@@ -40,7 +40,7 @@
         </foreach>
     </target>
 
-    <target name="release_allpkgs">
+    <target name="release_allpkgs" depends="init_release_type">
          <!-- 创建目录，并编译代码 -->
         <mkdir dir="${release_dir}"/>
         <property name="out.final.file" location="${release_dir}/${apk_name}_R_${TIME_CN}_v${mymanifest.manifest.android:versionName}_${pkgname}.apk" />
@@ -49,9 +49,7 @@
         <antcall target="release" />
     </target>
 
-    <target name="release_channel_pkgs">
-         <!-- 创建目录，并编译代码 -->
-        <mkdir dir="${release_dir}"/>
+    <target name="init_release_type">
         <if><condition><equals arg1="${keep_classes_dex}" arg2="true"/></condition>
             <then>
                 <property name="release_type" value="RL"/>
@@ -60,6 +58,10 @@
                 <property name="release_type" value="R"/>
             </else>
         </if>
+    </target>
+    <target name="release_channel_pkgs" depends="init_release_type">
+         <!-- 创建目录，并编译代码 -->
+        <mkdir dir="${release_dir}"/>
         <if><condition><equals arg1="${curdir}" arg2="HomeBaidu" /></condition>
             <then>
                 <property name="out.final.file" location="${release_dir}/${apk_name}_${release_type}_${channelnum}_${dkchannel}_${TIME_CN}_v${mymanifest.manifest.android:versionName}_${pkgname}.apk" />
