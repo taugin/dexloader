@@ -7,7 +7,6 @@
     <property name="release_dir" location="../../ReleaseDir" />
 
     <import file="package_rules.xml" optional="true" />
-    <import file="build_dex.xml" optional="true" />
 
     <property name="keep_classes_dex" value="true"/>
 
