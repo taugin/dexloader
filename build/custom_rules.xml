@@ -7,7 +7,6 @@
     <property name="release_dir" location="../../ReleaseDir" />
 
     <import file="package_rules.xml" optional="true" />
-    <import file="build_dex.xml" optional="true" />
 
     <property name="keep_classes_dex" value="true"/>
 
@@ -28,21 +27,12 @@
     <tstamp><format property="TODAY_CN" pattern="yyyy-MM-dd" locale="zh"/></tstamp> 
     <tstamp><format property="TIME_CN" pattern="yyyy-MM-dd-HH-mm-ss" locale="zh"/></tstamp> 
 
-    <target name="deploy">
+    <target name="deploy" depends="init_release_type">
         <mkdir dir="${release_dir}"/>
         <property name="out.final.file" location="${release_dir}/${apk_name}_R_${TIME_CN}_v${mymanifest.manifest.android:versionName}.apk" />
         <antcall target="clean" />
         <antcall target="release" />
     </target>
-
-    <!-- 发布naga加密版本的apk begin-->
-    <target name="deploy_naga">
-        <mkdir dir="${release_dir}"/>
-        <property name="out.final.file" location="${release_dir}/${apk_name}_RN_${TIME_CN}_v${mymanifest.manifest.android:versionName}.apk" />
-        <antcall target="clean" />
-        <antcall target="dexrelease" />
-    </target>
-    <!-- 发布naga加密版本的apk end-->
 
     <!-- 按照不同的包名打包apk begin -->
     <target name="deploy_pkgs">
@@ -50,7 +40,7 @@
         </foreach>
     </target>
 
-    <target name="release_allpkgs">
+    <target name="release_allpkgs" depends="init_release_type">
          <!-- 创建目录，并编译代码 -->
         <mkdir dir="${release_dir}"/>
         <property name="out.final.file" location="${release_dir}/${apk_name}_R_${TIME_CN}_v${mymanifest.manifest.android:versionName}_${pkgname}.apk" />
@@ -59,61 +49,49 @@
         <antcall target="release" />
     </target>
 
-    <target name="release_channel_pkgs">
+    <target name="init_release_type">
+        <if><condition><equals arg1="${keep_classes_dex}" arg2="true"/></condition>
+            <then>
+                <property name="release_type" value="RL"/>
+            </then>
+            <else>
+                <property name="release_type" value="R"/>
+            </else>
+        </if>
+    </target>
+    <target name="release_channel_pkgs" depends="init_release_type">
          <!-- 创建目录，并编译代码 -->
         <mkdir dir="${release_dir}"/>
-        <property name="out.final.file" location="${release_dir}/${apk_name}_R_${channelnum}_${TIME_CN}_v${mymanifest.manifest.android:versionName}_${pkgname}.apk" />
+        <if><condition><equals arg1="${curdir}" arg2="HomeBaidu" /></condition>
+            <then>
+                <property name="out.final.file" location="${release_dir}/${apk_name}_${release_type}_${channelnum}_${dkchannel}_${TIME_CN}_v${mymanifest.manifest.android:versionName}_${pkgname}.apk" />
+            </then>
+            <else>
+                <property name="out.final.file" location="${release_dir}/${apk_name}_${release_type}_${channelnum}_${TIME_CN}_v${mymanifest.manifest.android:versionName}_${pkgname}.apk" />
+            </else>
+        </if>
+
         <echo>${out.final.file}</echo>
         <antcall target="clean" />
         <antcall target="release" />
     </target>
     <!-- 按照不同的包名打包apk end -->
 
-    <target name="deploy_cocospay">
-        <xmltask source="${channel_res_dir}/channel_deploy.xml" encoding="utf-8">
-            <call path="/deploy/project[@name='HomeCocosPay']/item" target="release_channel_pkgs">
+    <target name="deploy_channel">
+        <basename file="${basedir}" property="curdir"/>
+        <xmltask source="${channel_res_dir}/channel_deploy2.xml" encoding="utf-8">
+            <call path="/deploy/project[@name='${curdir}']/item" target="release_channel_pkgs">
                 <param name="channelnum" path="@channelnum"/>
                 <param name="pkgname" path="@pkgname"/>
-            </call> 
-        </xmltask>
-    </target>
-    <target name="deploy_nothird">
-        <xmltask source="${channel_res_dir}/channel_deploy.xml" encoding="utf-8">
-            <call path="/deploy/project[@name='HomeNothird']/item" target="release_channel_pkgs">
-                <param name="channelnum" path="@channelnum"/>
-                <param name="pkgname" path="@pkgname"/>
-            </call> 
-        </xmltask>
-    </target>
-    <!-- 百度 -->
-    <target name="deploy_baidu">
-        <xmltask source="${channel_res_dir}/channel_deploy.xml" encoding="utf-8">
-            <call path="/deploy/project[@name='HomeBaidu']/item" target="release_baidu">
-                <param name="channelnum" path="@channelnum"/>
                 <param name="dkchannel" path="@dkchannel"/>
             </call> 
         </xmltask>
     </target>
-    <!-- 360　-->
-    <target name="deploy_qihu">
-        <xmltask source="${channel_res_dir}/channel_deploy.xml" encoding="utf-8">
-            <call path="/deploy/project[@name='HomeQiHu']/item" target="release_channel_pkgs">
-                <param name="channelnum" path="@channelnum"/>
-            </call> 
-        </xmltask>
-    </target>
-    <!-- 酷狗　-->
-    <target name="deploy_kugou">
-        <xmltask source="${channel_res_dir}/channel_deploy.xml" encoding="utf-8">
-            <call path="/deploy/project[@name='HomeKugou']/item" target="release_channel_pkgs">
-                <param name="channelnum" path="@channelnum"/>
-            </call> 
-        </xmltask>
-    </target>
+
     <!-- 发布特殊包名 -->
     <target name="deploy_pkgs_only">
         <xmltask source="${channel_res_dir}/channel_deploy.xml" encoding="utf-8">
-            <call path="//item[@specialpkg='true']" target="test_only">
+            <call path="//item[@specialpkg='true']" target="release_channel_pkgs">
                 <param name="pkgname" path="@pkgname"/>
             </call> 
         </xmltask>
@@ -121,14 +99,4 @@
     <target name="test_only">
         <echo>${pkgname}</echo>
     </target>
-    <!-- ================================================== 打百度的三个渠道包 ====================================================== -->
-    <target name="release_baidu">
-         <!-- 创建目录，并编译代码 -->
-        <mkdir dir="${release_dir}"/>
-        <property name="out.final.file" location="${release_dir}/${apk_name}_R_${channelnum}_${dkchannel}_${TIME_CN}_v${mymanifest.manifest.android:versionName}_${mymanifest.manifest.package}.apk" />
-        <echo>${out.final.file}</echo>
-        <antcall target="clean" />
-        <antcall target="release" />
-    </target>
-    <!-- ================================================== 打百度的三个渠道包 ====================================================== -->
 </project>
