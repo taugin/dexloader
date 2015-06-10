@@ -35,15 +35,6 @@
         <antcall target="release" />
     </target>
 
-    <!-- 发布naga加密版本的apk begin-->
-    <target name="deploy_naga">
-        <mkdir dir="${release_dir}"/>
-        <property name="out.final.file" location="${release_dir}/${apk_name}_RN_${TIME_CN}_v${mymanifest.manifest.android:versionName}.apk" />
-        <antcall target="clean" />
-        <antcall target="dexrelease" />
-    </target>
-    <!-- 发布naga加密版本的apk end-->
-
     <!-- 按照不同的包名打包apk begin -->
     <target name="deploy_pkgs">
         <foreach delimiter="," list="${allpkgs}" param="pkgname" target="release_allpkgs">
