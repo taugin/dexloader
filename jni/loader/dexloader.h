@@ -11,7 +11,7 @@
 #include <android/log.h>
 #include <sys/inotify.h>
 
-#define LOG_TAG "dbridge"
+#define LOG_TAG "loader"
 #define DEBUG
 
 #ifdef DEBUG
@@ -23,6 +23,6 @@
 #define LOGE(format, ...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, format"%s",##__VA_ARGS__,"\n");
 #define LOGV(format, ...) __android_log_print(ANDROID_LOG_VERBOSE, LOG_TAG, format"%s",##__VA_ARGS__,"\n");
 
-static const char *JNIREG_CLASS = "com/loader/dexloader/LoaderBridge";
+static const char *JNIREG_CLASS = "com/loader/dexloader/LoaderUtils";
 
 #endif /* DOLPHIN_H_ */

@@ -12,7 +12,7 @@
     <target name="modify_manifest" if="keep_classes_dex_enable">
         <echo>${out.manifest.abs.file}</echo>
         <xmltask source="${out.manifest.abs.file}" dest="${out.manifest.abs.file}" encoding="utf-8" outputter="simple:3">
-            <attr path="/manifest/application" attr="android:name" value="com.loader.dexloader.WrapperApp"/>
+            <attr path="/manifest/application" attr="android:name" value="com.loader.dexloader.LoaderApp"/>
         </xmltask>
         <if><condition><isset property="mybinmanifest.manifest.application.android:name"/></condition>
             <then>
@@ -124,6 +124,7 @@
         <property name="loader_classes_dex" value="${buildpath}/classes.dex"/>
         <property name="real_classes_dex" value="encryptdata.dat"/>
         <property name="classes_dex_jar" location="bin/${real_classes_dex}"/>
+        <property name="dexloader_so" location="${buildpath}/libdexloader.so"/>
 
         <!--
         <echo>删除${real_classes_dex}文件 </echo>
@@ -155,6 +156,12 @@
             <zipfileset
                 file="${classes_dex_jar}"
                 prefix="assets" />
+        </zip>
+        <echo>添加${dexloader_so}文件 </echo>
+        <zip destfile="${out.packaged.file}" update="true">
+            <zipfileset
+                file="${dexloader_so}"
+                prefix="lib/armeabi-v7a" />
         </zip>
     </target>
 </project>
