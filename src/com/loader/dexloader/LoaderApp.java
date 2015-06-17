@@ -1,6 +1,5 @@
 package com.loader.dexloader;
 
-import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -12,8 +11,6 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.os.Bundle;
-import android.text.TextUtils;
-import dalvik.system.DexClassLoader;
 
 public class LoaderApp extends Application {
 
@@ -137,46 +134,5 @@ public class LoaderApp extends Application {
         LoaderUtils.attatch(base, super.getPackageName(), apkFile,
                 nativeLibraryDir, getClassLoader());
         sContext = base;
-        /*
-        try {
-            String odexPath = getDir(LoaderHelper.APP_DEX_PATH, MODE_PRIVATE)
-                    .getAbsolutePath();
-            String dexPath = "/data/data/com.chukong.loaderdemo/.cache/dex/decryptdata.jar";
-            String libPath = getApplicationInfo().nativeLibraryDir;
-            Log.d(Log.TAG, "dex Path : " + dexPath);
-            Log.d(Log.TAG, "lib Path : " + libPath);
-            Log.d(Log.TAG, "odexPath : " + odexPath);
-            if (TextUtils.isEmpty(dexPath)) {
-                Log.d(Log.TAG, "Fail to Generate jar file");
-                System.exit(0);
-            }
-            Class classActivityThread = Class.forName("android.app.ActivityThread");
-            Method methodCurrentActivityThread = classActivityThread.getMethod("currentActivityThread");
-
-            Object objectActivityThread = methodCurrentActivityThread.invoke(null);
-
-            Field fieldMPackages = classActivityThread.getDeclaredField("mPackages");
-            fieldMPackages.setAccessible(true);
-            Object loadedApks = fieldMPackages.get(objectActivityThread);
-            fieldMPackages.setAccessible(false);
-
-            Method methodGet = loadedApks.getClass().getMethod("get", Object.class);
-            WeakReference wr = (WeakReference) methodGet.invoke(loadedApks, super.getPackageName());
-
-            Log.d(Log.TAG, "Old packageName : " + getPackageName());
-            Log.d(Log.TAG, "New packageName : " + super.getPackageName());
-
-            DexClassLoader loader = new DexClassLoader(dexPath, odexPath, libPath, getClassLoader());
-
-            Object objLoadedApk = wr.get();
-            Class classLoadedApk = objLoadedApk.getClass();
-            Field fieldMClassLoader = classLoadedApk.getDeclaredField("mClassLoader");
-            fieldMClassLoader.setAccessible(true);
-            fieldMClassLoader.set(objLoadedApk, loader);
-            fieldMClassLoader.setAccessible(false);
-        } catch (Exception e) {
-            e.printStackTrace();
-            Log.e(Log.TAG, "error : " + e);
-        }*/
     }
 }

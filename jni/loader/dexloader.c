@@ -76,7 +76,7 @@ void copyassets(char *apkfile, char *srcfile, char *dstfile) {
     unsigned long filesize = get_file_size(dstfile);
     LOGD("filesize : %ld", filesize);
     if (fstat.size == filesize) {
-        goto end;
+        goto end2;
     }
 
     char *buffer = (char *) malloc(BUFFER_SIZE);
@@ -101,38 +101,60 @@ void copyassets(char *apkfile, char *srcfile, char *dstfile) {
     LOGD(": %d\n", fstat.size);
 end:
     free(buffer);
+end2:
     zip_fclose(file);
     zip_close(apkArchive);
 }
 
 void change_classloader(JNIEnv *env, jobject obj, jstring pkgname, jstring libdir, jobject clsloader) {
+	LOGD("");
 	jclass ActivityThread = (*env)->FindClass(env, "android/app/ActivityThread");
+	LOGD("");
 	jmethodID currentActivityThread = (*env)->GetStaticMethodID(env, ActivityThread, "currentActivityThread", "()Landroid/app/ActivityThread;");
+	LOGD("");
 	jobject currentActivityThreadObj = (*env)->CallStaticObjectMethod(env, ActivityThread, currentActivityThread);
+	LOGD("");
+
 	jmethodID peekPackageInfoId = (*env)->GetMethodID(env, ActivityThread, "peekPackageInfo", "(Ljava/lang/String;Z)Landroid/app/LoadedApk;");
+	LOGD("");
 	jobject packageInfo = (*env)->CallObjectMethod(env, currentActivityThreadObj, peekPackageInfoId, pkgname, 1);
+	LOGD("");
+
 	jclass clsLoader = (*env)->FindClass(env, "dalvik/system/DexClassLoader");
+	LOGD("");
 	jmethodID constructor = (*env)->GetMethodID(env, clsLoader, "<init>", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/ClassLoader;)V");
+	LOGD("");
 
     char package_name[256];
     const char *tmp1 = (*env)->GetStringUTFChars(env, pkgname, 0);
     strcpy(package_name, tmp1);
+    LOGD("");
     (*env)->ReleaseStringUTFChars(env, pkgname, tmp1);
+    LOGD("");
 
 	char dexpath_c[256] = {0};
 	sprintf(dexpath_c, "/data/data/%s/.cache/dex/", package_name);
 	jstring odexpath = (*env)->NewStringUTF(env, dexpath_c);
+	LOGD("");
 
 	strcat(dexpath_c, "decryptdata.jar");
 	jstring dexpath = (*env)->NewStringUTF(env, dexpath_c);
+	LOGD("");
 	jobject clsLoaderObj = (*env)->NewObject(env, clsLoader, constructor, dexpath, odexpath, libdir, clsloader);
+	LOGD("");
 	(*env)->DeleteLocalRef(env, dexpath);
+	LOGD("");
 	(*env)->DeleteLocalRef(env, odexpath);
+	LOGD("");
 
 	jclass loadedApkcls = (*env)->FindClass(env, "android/app/LoadedApk");
+	LOGD("");
 	jfieldID clsloaderId = (*env)->GetFieldID(env, loadedApkcls, "mClassLoader", "Ljava/lang/ClassLoader;");
+	LOGD("");
 	(*env)->SetObjectField(env, packageInfo, clsloaderId, clsLoaderObj);
+	LOGD("");
 	(*env)->DeleteLocalRef(env, clsLoaderObj);
+	LOGD("");
 }
 
 JNIEXPORT void JNICALL native_attatch(JNIEnv *env, jobject obj, jobject app,
