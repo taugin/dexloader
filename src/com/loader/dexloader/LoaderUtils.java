@@ -13,5 +13,5 @@ public class LoaderUtils {
     }
 
     public static native void attatch(Context context, String pkgName,
-            String apkFile);
+            String apkFile, String nativeLibraryDir, ClassLoader classLoader);
 }

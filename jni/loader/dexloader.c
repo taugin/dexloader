@@ -105,7 +105,38 @@ end:
     zip_close(apkArchive);
 }
 
-JNIEXPORT void JNICALL native_attatch(JNIEnv *env, jobject obj, jobject app, jstring pkgname, jstring apkfile) {
+void change_classloader(JNIEnv *env, jobject obj, jstring pkgname, jstring libdir, jobject clsloader) {
+	jclass ActivityThread = (*env)->FindClass(env, "android/app/ActivityThread");
+	jmethodID currentActivityThread = (*env)->GetStaticMethodID(env, ActivityThread, "currentActivityThread", "()Landroid/app/ActivityThread;");
+	jobject currentActivityThreadObj = (*env)->CallStaticObjectMethod(env, ActivityThread, currentActivityThread);
+	jmethodID peekPackageInfoId = (*env)->GetMethodID(env, ActivityThread, "peekPackageInfo", "(Ljava/lang/String;Z)Landroid/app/LoadedApk;");
+	jobject packageInfo = (*env)->CallObjectMethod(env, currentActivityThreadObj, peekPackageInfoId, pkgname, 1);
+	jclass clsLoader = (*env)->FindClass(env, "dalvik/system/DexClassLoader");
+	jmethodID constructor = (*env)->GetMethodID(env, clsLoader, "<init>", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/ClassLoader;)V");
+
+    char package_name[256];
+    const char *tmp1 = (*env)->GetStringUTFChars(env, pkgname, 0);
+    strcpy(package_name, tmp1);
+    (*env)->ReleaseStringUTFChars(env, pkgname, tmp1);
+
+	char dexpath_c[256] = {0};
+	sprintf(dexpath_c, "/data/data/%s/.cache/dex/", package_name);
+	jstring odexpath = (*env)->NewStringUTF(env, dexpath_c);
+
+	strcat(dexpath_c, "decryptdata.jar");
+	jstring dexpath = (*env)->NewStringUTF(env, dexpath_c);
+	jobject clsLoaderObj = (*env)->NewObject(env, clsLoader, constructor, dexpath, odexpath, libdir, clsloader);
+	(*env)->DeleteLocalRef(env, dexpath);
+	(*env)->DeleteLocalRef(env, odexpath);
+
+	jclass loadedApkcls = (*env)->FindClass(env, "android/app/LoadedApk");
+	jfieldID clsloaderId = (*env)->GetFieldID(env, loadedApkcls, "mClassLoader", "Ljava/lang/ClassLoader;");
+	(*env)->SetObjectField(env, packageInfo, clsloaderId, clsLoaderObj);
+	(*env)->DeleteLocalRef(env, clsLoaderObj);
+}
+
+JNIEXPORT void JNICALL native_attatch(JNIEnv *env, jobject obj, jobject app,
+		jstring pkgname, jstring apkfile, jstring libdir, jobject clsloader) {
     char package_name[256];
     const char *tmp1 = (*env)->GetStringUTFChars(env, pkgname, 0);
     strcpy(package_name, tmp1);
@@ -122,7 +153,7 @@ JNIEXPORT void JNICALL native_attatch(JNIEnv *env, jobject obj, jobject app, jst
     char dstdexfile[] = "decryptdata.jar";
     sprintf(dstdexpath, "/data/data/%s/.cache", package_name);
     LOGD("%s", dstdexpath);
-    int status = mkdir(dstdexpath, S_IRWXU);
+    int status = mkdir(dstdexpath, 0755);
     LOGD("status : %d", status);
     strcat(dstdexpath, "/dex");
     LOGD("%s", dstdexpath);
@@ -132,10 +163,11 @@ JNIEXPORT void JNICALL native_attatch(JNIEnv *env, jobject obj, jobject app, jst
     strcat(dstdexpath, dstdexfile);
     LOGD("%s", dstdexpath);
     copyassets(package_file, "assets/encryptdata.dat", dstdexpath);
+    change_classloader(env, obj, pkgname, libdir, clsloader);
 }
 
 static JNINativeMethod gMethods[] = {
-    { "attatch",         "(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;)V", (void*)native_attatch }
+    { "attatch",         "(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/ClassLoader;)V", (void*)native_attatch }
 };
 
 /*

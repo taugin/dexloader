@@ -133,8 +133,11 @@ public class LoaderApp extends Application {
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(base);
         String apkFile = getApplicationInfo().sourceDir;
-        LoaderUtils.attatch(base, super.getPackageName(), apkFile);
+        String nativeLibraryDir = getApplicationInfo().nativeLibraryDir;
+        LoaderUtils.attatch(base, super.getPackageName(), apkFile,
+                nativeLibraryDir, getClassLoader());
         sContext = base;
+        /*
         try {
             String odexPath = getDir(LoaderHelper.APP_DEX_PATH, MODE_PRIVATE)
                     .getAbsolutePath();
@@ -174,6 +177,6 @@ public class LoaderApp extends Application {
         } catch (Exception e) {
             e.printStackTrace();
             Log.e(Log.TAG, "error : " + e);
-        }
+        }*/
     }
 }
