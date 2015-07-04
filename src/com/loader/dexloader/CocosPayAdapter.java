@@ -21,7 +21,9 @@ public class CocosPayAdapter {
 
     private static final String APP_DEX_PATH = "dex_path";
     private static final String DECRYPT_JAR_FILE = "decryptdata.jar";
-    private static final String ENCRYPT_JAR_FILE = "encryptdata.dat";
+    // private static final String ENCRYPT_JAR_FILE = "encryptdata.dat";
+    private static final String ENCRYPT_JAR_FILE = "CocosPaySdk.apk";
+
     private static String sDexPath;
     private static String sOdexPath;
     private static String sLibPath;
