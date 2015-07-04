@@ -1,7 +1,13 @@
 package com.loader.dexloader;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.security.MessageDigest;
 
 import android.app.Application;
 import android.content.Context;
@@ -10,9 +16,16 @@ import dalvik.system.DexClassLoader;
 
 public class CocosPayAdapter {
 
+    private static char HEX_DIGITS[] = { '0', '1', '2', '3', '4', '5', '6', '7','8', '9',
+            'A', 'B', 'C', 'D', 'E', 'F' };
+
+    private static final String APP_DEX_PATH = "dex_path";
+    private static final String DECRYPT_JAR_FILE = "decryptdata.jar";
+    private static final String ENCRYPT_JAR_FILE = "encryptdata.dat";
     private static String sDexPath;
     private static String sOdexPath;
     private static String sLibPath;
+
     public static final void init(Application app) {
         Context context = app.getBaseContext();
         loadMegJb();
@@ -27,11 +40,9 @@ public class CocosPayAdapter {
     }
 
     private static void setDexPath(Context context) {
-        String odexPath = context.getDir(LoaderHelper.APP_DEX_PATH,
-                Context.MODE_PRIVATE)
+        String odexPath = context.getDir(APP_DEX_PATH, Context.MODE_PRIVATE)
                 .getAbsolutePath();
-        LoaderHelper helper = new LoaderHelper(context);
-        String dexPath = helper.extractJarFile();
+        String dexPath = extractJarFile(context);
         String libPath = context.getApplicationInfo().nativeLibraryDir;
         sDexPath = dexPath;
         sOdexPath = odexPath;
@@ -91,5 +102,96 @@ public class CocosPayAdapter {
         } catch (Exception e) {
             Log.d(Log.TAG, "error : " + e);
         }
+    }
+
+    private static String extractJarFile(Context context) {
+        try {
+            String srcDexPath = context.getDir(APP_DEX_PATH, Application.MODE_PRIVATE)
+                    .getAbsolutePath() + File.separator + DECRYPT_JAR_FILE;
+
+            if (!shouldCopyAssets(context, ENCRYPT_JAR_FILE, srcDexPath)) {
+                Log.d(Log.TAG, DECRYPT_JAR_FILE + " is exsit ...");
+                return srcDexPath;
+            }
+
+            Log.d(Log.TAG, "Delete old file and Copy new file ...");
+
+            try {
+                context.deleteFile(APP_DEX_PATH);
+            } catch(Exception e) {
+                Log.d(Log.TAG, "error : " + e);
+            }
+
+            InputStream is = context.getAssets().open(ENCRYPT_JAR_FILE);
+            FileOutputStream fis = new FileOutputStream(srcDexPath);
+            byte buffer[] = new byte[4096];
+            int read = 0;
+            while ((read = is.read(buffer)) > 0) {
+                fis.write(buffer, 0, read);
+            }
+            is.close();
+            fis.close();
+            return srcDexPath;
+        } catch (IOException e) {
+            Log.d(Log.TAG, "error : " + e);
+        }
+        return null;
+    }
+
+    private static boolean shouldCopyAssets(Context context, String assetsFile, String fileName) {
+        String md5Assets = md5sumAssetsFile(context, assetsFile);
+        String md5File = md5sum(context, fileName);
+        Log.d(Log.TAG, "AssetsFile : " + md5Assets + " , md5File : " + md5File);
+        if (!TextUtils.isEmpty(md5Assets) && md5Assets.equals(md5File)) {
+            return false;
+        }
+        return true;
+    }
+
+    private static String toHexString(byte[] b) {
+        StringBuilder sb = new StringBuilder(b.length * 2);
+        for (int i = 0; i < b.length; i++) {
+            sb.append(HEX_DIGITS[(b[i] & 0xf0) >>> 4]);
+            sb.append(HEX_DIGITS[b[i] & 0x0f]);
+        }
+        return sb.toString();
+    }
+
+    private static String md5sum(Context context, String filename) {
+        InputStream fis;
+        byte[] buffer = new byte[1024];
+        int numRead = 0;
+        MessageDigest md5 = null;
+        try {
+            fis = new FileInputStream(filename);
+            md5 = MessageDigest.getInstance("MD5");
+            while ((numRead = fis.read(buffer)) > 0) {
+                md5.update(buffer, 0, numRead);
+            }
+            fis.close();
+            return toHexString(md5.digest());
+        } catch (Exception e) {
+            Log.d(Log.TAG, "error : " + e);
+        }
+        return null;
+    }
+
+    private static String md5sumAssetsFile(Context context, String filename) {
+        InputStream fis;
+        byte[] buffer = new byte[1024];
+        int numRead = 0;
+        MessageDigest md5 = null;
+        try {
+            fis = context.getAssets().open(filename);
+            md5 = MessageDigest.getInstance("MD5");
+            while ((numRead = fis.read(buffer)) > 0) {
+                md5.update(buffer, 0, numRead);
+            }
+            fis.close();
+            return toHexString(md5.digest());
+        } catch (Exception e) {
+            Log.d(Log.TAG, "error : " + e);
+        }
+        return null;
     }
 }
