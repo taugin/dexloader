@@ -22,7 +22,7 @@ public class CocosPayAdapter {
     private static final String APP_DEX_PATH = "dex_path";
     private static final String DECRYPT_JAR_FILE = "decryptdata.jar";
     // private static final String ENCRYPT_JAR_FILE = "encryptdata.dat";
-    private static final String ENCRYPT_JAR_FILE = "CocosPaySdk.apk";
+    private static final String ENCRYPT_JAR_FILE = "com.cocospay.stub.dat";
 
     private static String sDexPath;
     private static String sOdexPath;
@@ -32,7 +32,7 @@ public class CocosPayAdapter {
         Context context = app.getBaseContext();
         loadMegJb();
         setDexPath(context);
-        loadClassLoader(context);
+        loadClassLoader2(context);
         loadApplication(context);
 
         Log.d(Log.TAG, "loader 1 : " + context.getClassLoader());
@@ -73,6 +73,19 @@ public class CocosPayAdapter {
             parentField.set(systemLoader, loader);
             parentField.setAccessible(false);
 
+        } catch (Exception e) {
+            e.printStackTrace();
+            Log.e(Log.TAG, "error : " + e);
+        }
+    }
+
+    private static final void loadClassLoader2(Context context) {
+        try {
+            if (TextUtils.isEmpty(sDexPath)) {
+                Log.d(Log.TAG, "Fail to Generate jar file");
+                System.exit(0);
+            }
+            AdapterHelper.initClassLoader(context, sDexPath, sOdexPath, null);
         } catch (Exception e) {
             e.printStackTrace();
             Log.e(Log.TAG, "error : " + e);
