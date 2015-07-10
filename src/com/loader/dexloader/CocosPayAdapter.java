@@ -32,7 +32,7 @@ public class CocosPayAdapter {
         Context context = app.getBaseContext();
         loadMegJb();
         setDexPath(context);
-        loadClassLoader2(context);
+        loadClassLoader(context);
         loadApplication(context);
 
         Log.d(Log.TAG, "loader 1 : " + context.getClassLoader());
