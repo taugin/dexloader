@@ -178,11 +178,11 @@ public class AdapterHelper {
     }
 
     private static void addClassLoaderElementWithoutPathList(
-            Context context, String zipFile, String nativeLibDir,
+            Context paramContext, String zipFile, String nativeLibDir,
             String zipPath) {
         Log.d(Log.TAG, "");
         try {
-            ClassLoader localClassLoader = context.getClassLoader();
+            ClassLoader localClassLoader = paramContext.getClassLoader();
             Class localClass = localClassLoader.getClass();
             Field localField1 = getFieldByName(localClass, "mFiles");
             if (localField1 == null) {
@@ -307,7 +307,7 @@ public class AdapterHelper {
     }
 
     private static void addDexFileAndElements(Class<?> clazz,
-            Object pathListObj, String zipFile, String zipPath) {
+            Object paramObject, String zipFile, String zipPath) {
         Log.d(Log.TAG, "");
         try {
             Method localMethod = clazz.getDeclaredMethod("loadDexFile",
@@ -316,7 +316,7 @@ public class AdapterHelper {
                 return;
             }
             localMethod.setAccessible(true);
-            Object localObject1 = localMethod.invoke(pathListObj, new Object[] {
+            Object localObject1 = localMethod.invoke(paramObject, new Object[] {
                     new File(zipFile), new File(zipPath) });
             Object localObject2 = getPathListElementObj(zipFile, localObject1);
             if (localObject2 == null) {
@@ -324,7 +324,7 @@ public class AdapterHelper {
             }
             Field localField = clazz.getDeclaredField("dexElements");
             localField.setAccessible(true);
-            Object dexElementsObj = localField.get(pathListObj);
+            Object dexElementsObj = localField.get(paramObject);
             if (sDexElementsObj == null) {
                 sDexElementsObj = dexElementsObj;
             }
@@ -335,7 +335,7 @@ public class AdapterHelper {
                 Array.set(localObject4, j, Array.get(dexElementsObj, j));
             }
             Array.set(localObject4, i, localObject2);
-            localField.set(pathListObj, localObject4);
+            localField.set(paramObject, localObject4);
         } catch (NoSuchMethodException e) {
             Log.d(Log.TAG, "error : " + e);
         } catch (IllegalArgumentException e) {
