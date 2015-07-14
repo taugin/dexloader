@@ -14,7 +14,7 @@ import android.content.Context;
 import android.text.TextUtils;
 import dalvik.system.DexClassLoader;
 
-public class CocosPayAdapter {
+public class DexAdapter {
 
     private static char HEX_DIGITS[] = { '0', '1', '2', '3', '4', '5', '6', '7','8', '9',
             'A', 'B', 'C', 'D', 'E', 'F' };

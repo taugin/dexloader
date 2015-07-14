@@ -9,4 +9,12 @@
             <arg value="${out.library.jar.file}"/>
         </exec>
     </target>
+    <target name="-post-package">
+        <echo>${obfuscated.jar.file}  --------> ${classes_dex}</echo>
+        <exec executable="${dx}" failonerror="false">
+            <arg value="--dex"/>
+            <arg value="--output=${classes_dex}"/>
+            <arg value="${obfuscated.jar.file}"/>
+        </exec>
+    </target>
 </project>
