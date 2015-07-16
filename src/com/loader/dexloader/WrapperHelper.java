@@ -7,6 +7,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.MessageDigest;
+import java.util.jar.JarInputStream;
+import java.util.zip.ZipEntry;
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
@@ -15,6 +17,7 @@ import org.xmlpull.v1.XmlPullParserFactory;
 import android.app.Application;
 import android.content.Context;
 import android.content.res.XmlResourceParser;
+import android.os.Build;
 import android.text.TextUtils;
 import android.util.Base64;
 
@@ -50,6 +53,7 @@ public class WrapperHelper {
         }
     }
 
+    @SuppressWarnings("resource")
     public String extractJarFile() {
         try {
             // mContext.deleteFile(APP_DEX_PATH);
@@ -63,18 +67,42 @@ public class WrapperHelper {
 
             Log.d(Log.TAG, "Delete old file and Copy new file ...");
 
-            InputStream is = mContext.getAssets().open(mEncryptionJarFile);
-            FileOutputStream fis = new FileOutputStream(srcDexPath);
-            byte buffer[] = new byte[4096];
-            int read = 0;
-            while ((read = is.read(buffer)) > 0) {
-                fis.write(buffer, 0, read);
+            Log.d(Log.TAG, "SDK VERSION : " + Build.VERSION.SDK_INT);
+            if (Build.VERSION.SDK_INT > 8) {
+                InputStream is = mContext.getAssets().open(mEncryptionJarFile);
+                FileOutputStream fis = new FileOutputStream(srcDexPath);
+                byte buffer[] = new byte[4096];
+                int read = 0;
+                while ((read = is.read(buffer)) > 0) {
+                    fis.write(buffer, 0, read);
+                }
+                is.close();
+                fis.close();
+            } else {
+                String apkFile = mContext.getApplicationInfo().publicSourceDir;
+                JarInputStream jarInputStream = new JarInputStream(
+                        new FileInputStream(apkFile));
+                ZipEntry entry = null;
+                String assetsFile = "assets/" + mEncryptionJarFile;
+                while ((entry = jarInputStream.getNextEntry()) != null) {
+                    if (assetsFile.equals(entry.getName())) {
+                        FileOutputStream fis = new FileOutputStream(srcDexPath);
+                        byte buffer[] = new byte[4096];
+                        int read = 0;
+                        while ((read = jarInputStream.read(buffer)) > 0) {
+                            fis.write(buffer, 0, read);
+                        }
+                        fis.close();
+                        jarInputStream.closeEntry();
+                        jarInputStream.close();
+                        break;
+                    }
+                }
             }
-            is.close();
-            fis.close();
             return srcDexPath;
         } catch (IOException e) {
             Log.d(Log.TAG, "error : " + e);
+            e.printStackTrace();
         }
         return null;
     }

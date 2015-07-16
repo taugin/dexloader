@@ -11,6 +11,7 @@ import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
 import dalvik.system.DexClassLoader;
@@ -59,7 +60,14 @@ public class WrapperApp extends Application {
 
             // 修改mPackageInfo中的成员变量mApplication
             // mPackageInfo是android.app.LoadedApk类
-            Class loadedApkClass = Class.forName("android.app.LoadedApk");
+            String packageInfo = null;
+            Log.d(Log.TAG, "SDK VERSION : " + Build.VERSION.SDK_INT);
+            if (Build.VERSION.SDK_INT > 8) {
+                packageInfo = "android.app.LoadedApk";
+            } else {
+                packageInfo = "android.app.ActivityThread$PackageInfo";
+            }
+            Class loadedApkClass = Class.forName(packageInfo);
             Field mApplication = loadedApkClass
                     .getDeclaredField("mApplication");
             mApplication.setAccessible(true);
@@ -138,7 +146,13 @@ public class WrapperApp extends Application {
                     .getAbsolutePath();
             WrapperHelper helper = new WrapperHelper(this);
             String dexPath = helper.extractJarFile();
-            String libPath = getApplicationInfo().nativeLibraryDir;
+            String libPath = null;
+            try {
+                libPath = getApplicationInfo().nativeLibraryDir;
+            } catch(NoSuchFieldError e) {
+                Log.d(Log.TAG, "error : " + e);
+                libPath = "data/data/" + super.getPackageName() + "/lib";
+            }
             Log.d(Log.TAG, "dex Path : " + dexPath);
             Log.d(Log.TAG, "lib Path : " + libPath);
             Log.d(Log.TAG, "odexPath : " + odexPath);
