@@ -54,7 +54,7 @@
 -keep class * extends android.app.Application {
 }
 
--keep class com.loader.dexloader.DexAdapter {public static final void init(android.app.Application);}
+# -keep class com.loader.dexloader.DexAdapter {public static final void init(android.app.Application);}
 
 # The support library contains references to newer platform versions.
 # Don't warn about those in case this app is linking against an older
