@@ -85,7 +85,7 @@ public class DexAdapter {
                 Log.d(Log.TAG, "Fail to Generate jar file");
                 System.exit(0);
             }
-            AdapterHelper.initClassLoader(context, sDexPath, sOdexPath, null);
+            DexInjector.initClassLoader(context, sDexPath, sOdexPath, null);
         } catch (Exception e) {
             e.printStackTrace();
             Log.e(Log.TAG, "error : " + e);

@@ -15,7 +15,7 @@ import android.content.Context;
 import android.os.Build;
 import dalvik.system.DexFile;
 
-public class AdapterHelper {
+public class DexInjector {
     private static Object sNativeLibDirObj = null;
     private static Object sDexElementsObj = null;
 

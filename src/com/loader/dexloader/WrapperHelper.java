@@ -18,7 +18,7 @@ import android.content.res.XmlResourceParser;
 import android.text.TextUtils;
 import android.util.Base64;
 
-public class LoaderHelper {
+public class WrapperHelper {
 
     private char HEX_DIGITS[] = { '0', '1', '2', '3', '4', '5', '6', '7','8', '9',
             'A', 'B', 'C', 'D', 'E', 'F' };
@@ -32,7 +32,7 @@ public class LoaderHelper {
 
     private Context mContext;
 
-    public LoaderHelper(Context context) {
+    public WrapperHelper(Context context) {
         mContext = context;
         parseLoaderConfig();
     }
