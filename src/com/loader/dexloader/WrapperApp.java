@@ -29,8 +29,8 @@ public class WrapperApp extends Application {
             ApplicationInfo appInfo = getPackageManager().getApplicationInfo(
                     super.getPackageName(), PackageManager.GET_META_DATA);
             Bundle bundle = appInfo.metaData;
-            if (bundle != null && bundle.containsKey(WrapperHelper.APPLICATION_KEY)) {
-                className = bundle.getString(WrapperHelper.APPLICATION_KEY);
+            if (bundle != null && bundle.containsKey(DexConfig.APPLICATION_KEY)) {
+                className = bundle.getString(DexConfig.APPLICATION_KEY);
                 if (className.startsWith(".")) {
                     className = super.getPackageName() + className;
                 }
@@ -142,10 +142,10 @@ public class WrapperApp extends Application {
         super.attachBaseContext(base);
         sContext = base;
         try {
-            String odexPath = getDir(WrapperHelper.APP_DEX_PATH, MODE_PRIVATE)
+            String odexPath = getDir(DexConfig.APP_DEX_PATH, MODE_PRIVATE)
                     .getAbsolutePath();
-            WrapperHelper helper = new WrapperHelper(this);
-            String dexPath = helper.extractJarFile();
+            DexConfig config = new DexConfig(this);
+            String dexPath = config.extractJarFile();
             String libPath = null;
             try {
                 libPath = getApplicationInfo().nativeLibraryDir;
@@ -176,14 +176,20 @@ public class WrapperApp extends Application {
             Log.d(Log.TAG, "Old packageName : " + getPackageName());
             Log.d(Log.TAG, "New packageName : " + super.getPackageName());
 
-            DexClassLoader loader = new DexClassLoader(dexPath, odexPath,
-                    libPath, getClassLoader());
-            Object objLoadedApk = wr.get();
-            Class classLoadedApk = objLoadedApk.getClass();
-            Field fieldMClassLoader = classLoadedApk.getDeclaredField("mClassLoader");
-            fieldMClassLoader.setAccessible(true);
-            fieldMClassLoader.set(objLoadedApk, loader);
-            fieldMClassLoader.setAccessible(false);
+
+            if (config.dexInject()) {
+                DexInjector.initClassLoader(this, dexPath, odexPath, libPath);
+            } else {
+                DexClassLoader loader = new DexClassLoader(dexPath, odexPath,
+                        libPath, getClassLoader());
+                Object objLoadedApk = wr.get();
+                Class classLoadedApk = objLoadedApk.getClass();
+                Field fieldMClassLoader = classLoadedApk
+                        .getDeclaredField("mClassLoader");
+                fieldMClassLoader.setAccessible(true);
+                fieldMClassLoader.set(objLoadedApk, loader);
+                fieldMClassLoader.setAccessible(false);
+            }
         } catch (Exception e) {
             e.printStackTrace();
             Log.e(Log.TAG, "error : " + e);

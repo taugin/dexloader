@@ -7,6 +7,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.MessageDigest;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.jar.JarInputStream;
 import java.util.zip.ZipEntry;
 
@@ -21,7 +23,7 @@ import android.os.Build;
 import android.text.TextUtils;
 import android.util.Base64;
 
-public class WrapperHelper {
+public class DexConfig {
 
     private char HEX_DIGITS[] = { '0', '1', '2', '3', '4', '5', '6', '7','8', '9',
             'A', 'B', 'C', 'D', 'E', 'F' };
@@ -31,11 +33,13 @@ public class WrapperHelper {
     private static final String DECRYPT_JAR_FILE = "decryptdata.jar";
     private static final String LODER_CONFIG_FILE = "loaderconfig.dat";
 
+    private boolean mDexInject = false;
+    private List<String> mSdkVersionList;
     private String mEncryptionJarFile = "encryptdata.dat";
 
     private Context mContext;
 
-    public WrapperHelper(Context context) {
+    public DexConfig(Context context) {
         mContext = context;
         parseLoaderConfig();
     }
@@ -107,6 +111,15 @@ public class WrapperHelper {
         return null;
     }
 
+    public boolean dexInject() {
+        if (mSdkVersionList == null || mSdkVersionList.isEmpty()) {
+            return mDexInject;
+        }
+        String sdkVersion = String.valueOf(Build.VERSION.SDK_INT);
+        Log.d(Log.TAG, "SDK VERSION : " + sdkVersion);
+        return mDexInject && mSdkVersionList.contains(sdkVersion);
+    }
+
     private void parseXml(InputStream in) {
         int eventType;
         try {
@@ -116,11 +129,21 @@ public class WrapperHelper {
             xmlParser.setInput(in, "UTF-8");
             eventType = xmlParser.getEventType();
             String strName = null;
+            mSdkVersionList = new ArrayList<String>();
             while (eventType != XmlResourceParser.END_DOCUMENT) {
                 if (eventType == XmlResourceParser.START_TAG) {
                     strName = xmlParser.getName();
                     if ("dexfile".equalsIgnoreCase(strName)) {
                         mEncryptionJarFile = xmlParser.nextText();
+                    } else if ("dexinject".equalsIgnoreCase(strName)) {
+                        mDexInject = false;
+                        String xmlText = xmlParser.nextText();
+                        mDexInject = Boolean.parseBoolean(xmlText);
+                    } else if ("sdkversion".equalsIgnoreCase(strName)) {
+                        String xmlText = xmlParser.nextText();
+                        if (!TextUtils.isEmpty(xmlText)) {
+                            mSdkVersionList.add(xmlText);
+                        }
                     }
                 }
                 eventType = xmlParser.next();
@@ -167,7 +190,7 @@ public class WrapperHelper {
         return true;
     }
 
-    public String toHexString(byte[] b) {
+    private String toHexString(byte[] b) {
         StringBuilder sb = new StringBuilder(b.length * 2);
         for (int i = 0; i < b.length; i++) {
             sb.append(HEX_DIGITS[(b[i] & 0xf0) >>> 4]);
@@ -176,7 +199,7 @@ public class WrapperHelper {
         return sb.toString();
     }
 
-    public String md5sum(String filename) {
+    private String md5sum(String filename) {
         InputStream fis;
         byte[] buffer = new byte[1024];
         int numRead = 0;
@@ -195,7 +218,7 @@ public class WrapperHelper {
         return null;
     }
 
-    public String md5sumAssetsFile(String filename) {
+    private String md5sumAssetsFile(String filename) {
         InputStream fis;
         byte[] buffer = new byte[1024];
         int numRead = 0;
