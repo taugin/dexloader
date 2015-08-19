@@ -177,7 +177,9 @@ public class WrapperApp extends Application {
             Log.d(Log.TAG, "New packageName : " + super.getPackageName());
 
 
-            if (config.dexInject()) {
+            boolean dexInject = config.dexInject();
+            Log.d(Log.TAG, "dexInject : " + dexInject);
+            if (dexInject) {
                 DexInjector.initClassLoader(this, dexPath, odexPath, libPath);
             } else {
                 DexClassLoader loader = new DexClassLoader(dexPath, odexPath,

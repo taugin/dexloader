@@ -65,8 +65,8 @@
     </target>
 
     <target name="-post-package">
-        <property name="splash_image" location="${channel_res_dir}/${channel}/logo/splash_image.png"/>
-        <property name="icon_image" location="${channel_res_dir}/${channel}/icon/app_icon.png"/>
+        <property name="splash_image" location="${channel_res_dir}/${channelnum}/logo/splash_image.png"/>
+        <property name="icon_image" location="${channel_res_dir}/${channelnum}/icon/app_icon.png"/>
         <property file="${game_res_dir}/resources.properties" />
         <property name="unity.res.dir" location="${game_res_dir}/${default_unity_res}" />
 

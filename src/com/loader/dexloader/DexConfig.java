@@ -33,7 +33,7 @@ public class DexConfig {
     private static final String DECRYPT_JAR_FILE = "decryptdata.jar";
     private static final String LODER_CONFIG_FILE = "loaderconfig.dat";
 
-    private boolean mDexInject = false;
+    private boolean mDexInject = true;
     private List<String> mSdkVersionList;
     private String mEncryptionJarFile = "encryptdata.dat";
 
