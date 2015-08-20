@@ -33,7 +33,7 @@ public class DexConfig {
     private static final String DECRYPT_JAR_FILE = "decryptdata.jar";
     private static final String LODER_CONFIG_FILE = "loaderconfig.dat";
 
-    private boolean mDexInject = true;
+    private DexState mDexState = DexState.DEX_INJECT;
     private List<String> mSdkVersionList;
     private String mEncryptionJarFile = "encryptdata.dat";
 
@@ -111,13 +111,15 @@ public class DexConfig {
         return null;
     }
 
-    public boolean dexInject() {
-        if (mSdkVersionList == null || mSdkVersionList.isEmpty()) {
-            return mDexInject;
+    public DexState dexInject() {
+        if (mSdkVersionList != null) {
+            String sdkVersion = String.valueOf(Build.VERSION.SDK_INT);
+            Log.d(Log.TAG, "SDK VERSION : " + sdkVersion);
+            if (mSdkVersionList.contains(sdkVersion)) {
+                return DexState.DEX_INJECT;
+            }
         }
-        String sdkVersion = String.valueOf(Build.VERSION.SDK_INT);
-        Log.d(Log.TAG, "SDK VERSION : " + sdkVersion);
-        return mDexInject && mSdkVersionList.contains(sdkVersion);
+        return mDexState;
     }
 
     private void parseXml(InputStream in) {
@@ -136,9 +138,14 @@ public class DexConfig {
                     if ("dexfile".equalsIgnoreCase(strName)) {
                         mEncryptionJarFile = xmlParser.nextText();
                     } else if ("dexinject".equalsIgnoreCase(strName)) {
-                        mDexInject = false;
                         String xmlText = xmlParser.nextText();
-                        mDexInject = Boolean.parseBoolean(xmlText);
+                        if ("dex_inject".equalsIgnoreCase(xmlText)) {
+                            mDexState = DexState.DEX_INJECT;
+                        } else if ("dex_replace".equalsIgnoreCase(xmlText)) {
+                            mDexState = DexState.DEX_REPLACE;
+                        } else if ("dex_parent".equalsIgnoreCase(xmlText)) {
+                            mDexState = DexState.DEX_PARENT;
+                        }
                     } else if ("sdkversion".equalsIgnoreCase(strName)) {
                         String xmlText = xmlParser.nextText();
                         if (!TextUtils.isEmpty(xmlText)) {
@@ -235,5 +242,9 @@ public class DexConfig {
             Log.d(Log.TAG, "error : " + e);
         }
         return null;
+    }
+
+    public enum DexState {
+        DEX_INJECT, DEX_REPLACE, DEX_PARENT
     }
 }

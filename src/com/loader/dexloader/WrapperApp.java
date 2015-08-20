@@ -14,6 +14,9 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
+
+import com.loader.dexloader.DexConfig.DexState;
+
 import dalvik.system.DexClassLoader;
 
 public class WrapperApp extends Application {
@@ -177,11 +180,11 @@ public class WrapperApp extends Application {
             Log.d(Log.TAG, "New packageName : " + super.getPackageName());
 
 
-            boolean dexInject = config.dexInject();
-            Log.d(Log.TAG, "dexInject : " + dexInject);
-            if (dexInject) {
+            DexState state = config.dexInject();
+            Log.d(Log.TAG, "DexState : " + state.name());
+            if (state == DexState.DEX_INJECT) {
                 DexInjector.initClassLoader(this, dexPath, odexPath, libPath);
-            } else {
+            } else if (state == DexState.DEX_REPLACE) {
                 DexClassLoader loader = new DexClassLoader(dexPath, odexPath,
                         libPath, getClassLoader());
                 Object objLoadedApk = wr.get();
@@ -191,6 +194,27 @@ public class WrapperApp extends Application {
                 fieldMClassLoader.setAccessible(true);
                 fieldMClassLoader.set(objLoadedApk, loader);
                 fieldMClassLoader.setAccessible(false);
+            } else if (state == DexState.DEX_PARENT) {
+                ClassLoader systemParentLoader = base.getClassLoader()
+                        .getParent();
+                ClassLoader systemLoader = base.getClassLoader();
+                DexClassLoader loader = new DexClassLoader(dexPath, odexPath,
+                        libPath, systemParentLoader);
+                Field parentField = null;
+                Class s1 = systemLoader.getClass();
+                while (parentField == null && s1 != null) {
+                    Log.d(Log.TAG, "s1 : " + s1);
+                    try {
+                        parentField = s1.getDeclaredField("parent");
+                    } catch (NoSuchFieldException e) {
+                        Log.d(Log.TAG, "error : " + e);
+                    }
+                    s1 = s1.getSuperclass();
+                }
+                Log.d(Log.TAG, "parentField : " + parentField);
+                parentField.setAccessible(true);
+                parentField.set(systemLoader, loader);
+                parentField.setAccessible(false);
             }
         } catch (Exception e) {
             e.printStackTrace();
