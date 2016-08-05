@@ -26,6 +26,9 @@ import android.util.Base64;
 
 public class DexConfig {
 
+    private static final int VERSION_CODE = 100;
+    private static final String VERSION_NAME = "1.0.0";
+
     private char HEX_DIGITS[] = { '0', '1', '2', '3', '4', '5', '6', '7','8', '9',
             'A', 'B', 'C', 'D', 'E', 'F' };
     public static final String APPLICATION_KEY = "APPLICATION_CLASS_NAME";
@@ -43,6 +46,7 @@ public class DexConfig {
 
     public DexConfig(Context context) {
         mContext = context;
+        Log.d(Log.TAG, "version : " + getVersionName());
         parseLoaderConfig();
     }
 
@@ -59,14 +63,23 @@ public class DexConfig {
         }
     }
 
+    public int getVersionCode() {
+        return VERSION_CODE;
+    }
+
+    public String getVersionName() {
+        return VERSION_NAME;
+    }
+
     public String getExtractJarFilePath() {
         String srcDexPath = mContext.getDir(APP_DEX_PATH, Application.MODE_PRIVATE)
                 .getAbsolutePath() + File.separator + DECRYPT_JAR_FILE;
         SharedPreferences sp = mContext.getSharedPreferences(SP_DEXLOADER, Context.MODE_PRIVATE);
-        String dexPath = sp.getString(APP_DEX_PATH, srcDexPath);
-        File dexFile = new File(dexPath);
+        String configDexPath = sp.getString(APP_DEX_PATH, srcDexPath);
+        Log.d(Log.TAG, "configDexPath : " + configDexPath);
+        File dexFile = new File(configDexPath);
         if (dexFile.exists()) {
-            return dexPath;
+            return configDexPath;
         }
         return srcDexPath;
     }
