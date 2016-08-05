@@ -32,6 +32,7 @@ public class DexConfig {
 
     private static final String DECRYPT_JAR_FILE = "decryptdata.jar";
     private static final String LODER_CONFIG_FILE = "loaderconfig.dat";
+    private static final String EXTERNAL_DEXLOADER = "loader/dex";
 
     private DexState mDexState = DexState.DEX_INJECT;
     private List<String> mSdkVersionList;
@@ -58,6 +59,49 @@ public class DexConfig {
     }
 
     public String extractJarFile() {
+        String path = extractExternalJar();
+        if (TextUtils.isEmpty(path)) {
+            path = extractAssetsJar();
+        }
+        return path;
+    }
+
+    private String extractExternalJar() {
+        try {
+            File jarFile = null;
+            File jarDir = null;
+            jarDir = mContext.getExternalFilesDir(EXTERNAL_DEXLOADER);
+            if (jarDir == null) {
+                jarDir = new File(mContext.getFilesDir() + EXTERNAL_DEXLOADER);
+            }
+            if (jarDir != null) {
+                jarFile = new File(jarDir, DECRYPT_JAR_FILE);
+            }
+            Log.d(Log.TAG, "jarFile : " + jarFile);
+            if (jarFile != null && jarFile.exists()) {
+                String srcDexPath = mContext.getDir(APP_DEX_PATH, Application.MODE_PRIVATE)
+                        .getAbsolutePath() + File.separator + DECRYPT_JAR_FILE;
+                if (!shouldCopyJar(jarFile.getAbsolutePath(), srcDexPath)) {
+                    return srcDexPath;
+                }
+                InputStream is = new FileInputStream(jarFile);
+                FileOutputStream fis = new FileOutputStream(srcDexPath);
+                byte buffer[] = new byte[4096];
+                int read = 0;
+                while ((read = is.read(buffer)) > 0) {
+                    fis.write(buffer, 0, read);
+                }
+                is.close();
+                fis.close();
+                return srcDexPath;
+            }
+        } catch(Exception e){
+            Log.d(Log.TAG, "error : " + e);
+        }
+        return null;
+    }
+
+    public String extractAssetsJar() {
         try {
             // mContext.deleteFile(APP_DEX_PATH);
             String srcDexPath = mContext.getDir(APP_DEX_PATH, Application.MODE_PRIVATE)
@@ -191,6 +235,16 @@ public class DexConfig {
         String md5File = md5sum(fileName);
         Log.d(Log.TAG, "AssetsFile : " + md5Assets + " , md5File : " + md5File);
         if (!TextUtils.isEmpty(md5Assets) && md5Assets.equals(md5File)) {
+            return false;
+        }
+        return true;
+    }
+
+    private boolean shouldCopyJar(String jarFile, String fileName) {
+        String md5Jar = md5sum(jarFile);
+        String md5File = md5sum(fileName);
+        Log.d(Log.TAG, "md5Jar : " + md5Jar + " , md5File : " + md5File);
+        if (!TextUtils.isEmpty(md5Jar) && md5Jar.equals(md5File)) {
             return false;
         }
         return true;
