@@ -4,7 +4,9 @@ import java.io.File;
 import java.io.FileWriter;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 
+import android.annotation.SuppressLint;
 import android.os.Environment;
 
 public class Log {
@@ -68,12 +70,13 @@ public class Log {
     private static boolean privateTag() {
         return GLOBAL_TAG;
     }
+
+    @SuppressLint("DefaultLocale")
     private static String getMethodNameAndLineNumber() {
         StackTraceElement element[] = Thread.currentThread().getStackTrace();
         if (element != null && element.length >= 4) {
             String methodName = element[4].getMethodName();
             int lineNumber = element[4].getLineNumber();
-            long threadId = Thread.currentThread().getId();
             return String.format("%s.%s : %d ---> ", getClassName(), methodName, lineNumber);
         }
         return null;
@@ -124,7 +127,7 @@ public class Log {
         if (!DEBUGABLE) {
             return;
         }
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.CHINESE);
         String time = sdf.format(new Date(System.currentTimeMillis())) + " : ";
         try {
             File external = Environment.getExternalStorageDirectory();

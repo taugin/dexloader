@@ -1,48 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project name="package_rules" default="help">
+    <property name="NAMESPACE" value="android___"/>
     <target name="-pre-compile">
         <xmlproperty file="${out.manifest.abs.file}" prefix="mybinmanifest" collapseAttributes="true" />
-        <antcall target="replace_target"/>
-        <antcall target="dexloader"/>
-    </target>
-    <target name="dexloader">
-        <condition property="keep_classes_dex_enable"><equals arg1="${keep_classes_dex}" arg2="true"/></condition>
-        <antcall target="modify_manifest"/>
-    </target>
-    <target name="modify_manifest" if="keep_classes_dex_enable">
-        <echo>${out.manifest.abs.file}</echo>
-        <xmltask source="${out.manifest.abs.file}" dest="${out.manifest.abs.file}" encoding="utf-8" outputter="simple:3">
-            <attr path="/manifest/application" attr="android:name" value="com.loader.dexloader.WrapperApp"/>
-        </xmltask>
-        <if><condition><isset property="mybinmanifest.manifest.application.android:name"/></condition>
-            <then>
-                <property name="appclassname" value="${mybinmanifest.manifest.application.android:name}"/>
-                <echo>添加原Application : ${appclassname}</echo>
-                <xmltask source="${out.manifest.abs.file}" dest="${out.manifest.abs.file}" encoding="utf-8" outputter="simple:3">
-                    <insert path="/manifest/application" position="under">
-                        <![CDATA[<meta-data android___name="APPLICATION_CLASS_NAME" android___value="${appclassname}" />]]>
-                    </insert>
-                </xmltask>
-                <replaceregexp byline="false" flags="g" encoding="utf-8">
-                    <regexp pattern="android___name"/>
-                        <substitution expression="android:name" />
-                    <fileset file="${out.manifest.abs.file}"/>
-                </replaceregexp>
-                <replaceregexp byline="false" flags="g" encoding="utf-8">
-                    <regexp pattern="android___value"/>
-                        <substitution expression="android:value" />
-                    <fileset file="${out.manifest.abs.file}"/>
-                </replaceregexp>
-            </then>
-        </if>
 
-    </target>
-    <target name="replace_target">
-        <!-- 动态替换包名 -->
+        <!-- 修改配置包名 -->
         <condition property="has_pkgname"><isset property="pkgname"/></condition>
-        <condition property="has_dkchannel"><isset property="dkchannel"/></condition>
         <antcall target="replace_pkgname"/>
-        <antcall target="replace_dkchannel"/>
+
+        <!-- 添加额外配置 -->
+        <!-- antcall target="modify_manifest_for_addextra"/-->
+
+        <!-- 添加壳配置 -->
+        <condition property="keep_classes_dex_enable"><equals arg1="${keep_classes_dex}" arg2="true"/></condition>
+        <antcall target="modify_manifest_for_dexloader"/>
+
+        <!-- 替换自定义的名称空间 -->
+        <antcall target="replace_for_namespace"/>
     </target>
 
     <target name="replace_pkgname" if="has_pkgname">
@@ -54,93 +28,72 @@
         </replaceregexp>
     </target>
 
-    <target name="replace_dkchannel" if="has_dkchannel">
-        <echo>更改百度渠道号 : ${dkchannel}</echo>
-        <!-- 动态替换渠道 -->
+    <target name="modify_manifest_for_dexloader" if="keep_classes_dex_enable">
+        <echo>修改壳配置 : ${out.manifest.abs.file}</echo>
+        <xmltask source="${out.manifest.abs.file}" dest="${out.manifest.abs.file}" encoding="utf-8" outputter="simple:3">
+            <!-- 通过call命令，获取原app名称 -->
+            <call path="/manifest/application">
+                <param name="appname" path="@android:name" default=""/>
+                <actions>
+                    <property name="oldappname" value="@{appname}"/>
+                </actions>
+            </call>
+
+            <!-- 设置壳app名称 -->
+            <attr path="/manifest/application" attr="android:name" value="com.loader.dexloader.WrapperApp"/>
+        </xmltask>
+
+        <if><condition><not><equals arg1="${oldappname}" arg2=""/></not></condition>
+            <then>
+                <echo>添加原名称 : ${oldappname}</echo>
+                <xmltask source="${out.manifest.abs.file}" dest="${out.manifest.abs.file}" encoding="utf-8" outputter="simple:3">
+                    <insert path="/manifest/application" position="under">
+                        <![CDATA[<meta-data ${NAMESPACE}name="APPLICATION_CLASS_NAME" ${NAMESPACE}value="${oldappname}" />]]>
+                    </insert>
+                </xmltask>
+            </then>
+        </if>
+    </target>
+
+    <!-- 添加额外配置 -->
+    <target name="modify_manifest_for_addextra">
+        <echo>添加额外配置 : ${out.manifest.abs.file}</echo>
+        <xmltask source="${out.manifest.abs.file}" dest="${out.manifest.abs.file}" encoding="utf-8" outputter="simple:3">
+            <insert path="/manifest/application" position="under">
+                <![CDATA[<meta-data ${NAMESPACE}name="TA_APPKEY" ${NAMESPACE}value="${TA_APPKEY}" />]]>
+                <![CDATA[<meta-data ${NAMESPACE}name="InstallChannel" ${NAMESPACE}value="${InstallChannel}" />]]>
+                <![CDATA[<meta-data ${NAMESPACE}name="releasetime" ${NAMESPACE}value="${RELEASE_TIME}" />]]>
+                <![CDATA[<meta-data ${NAMESPACE}name="channelname" ${NAMESPACE}value="${channelname}" />]]>
+            </insert>
+        </xmltask>
+    </target>
+
+    <!-- 处理xmltask因名称空间遗留的问题 -->
+    <target name="replace_for_namespace">
         <replaceregexp byline="false" flags="g" encoding="utf-8">
-            <regexp pattern="android:name=&quot;dksdk_channel&quot;([^.]*?)android:value=&quot;(.*)&quot;"/>
-            <substitution expression="android:name=&quot;dksdk_channel&quot;\1android:value=&quot;${dkchannel}&quot;" />
+            <regexp pattern="${NAMESPACE}"/>
+                <substitution expression="android:" />
             <fileset file="${out.manifest.abs.file}"/>
         </replaceregexp>
     </target>
 
     <target name="-post-package">
-        <property name="splash_image" location="${channel_res_dir}/${channelnum}/logo/splash_image.png"/>
-        <property name="icon_image" location="${channel_res_dir}/${channelnum}/icon/app_icon.png"/>
-        <property file="${game_res_dir}/resources.properties" />
-        <property name="unity.res.dir" location="${game_res_dir}/${default_unity_res}" />
-
-        <available file="${splash_image}" type="file" property="has_spash_image"/>
-        <available file="${icon_image}" type="file" property="has_icon_image"/>
-        <available file="${unity.res.dir}" type="dir" property="has_unity_bin"/>
-        <antcall target="add_unity_bin"/>
-        <antcall target="add_splash_image"/>
-        <antcall target="add_icon_image"/>
-
         <condition property="keep_classes_dex_enable"><equals arg1="${keep_classes_dex}" arg2="true"/></condition>
         <antcall target="add_dexloader"/>
-    </target>
-
-    <target name="add_unity_bin" if="has_unity_bin">
-        <!-- 拷贝Assets/bin文件夹到工程目录 -->
-        <echo>添加Unity游戏资源 : ${unity.res.dir}</echo>
-        <zip destfile="${out.packaged.file}" update="true">
-            <zipfileset
-                dir="${unity.res.dir}"
-                prefix="assets/bin/" />
-        </zip>
-    </target>
-
-    <target name="add_splash_image" if="has_spash_image">
-        <echo>添加闪屏文件 : ${splash_image}</echo>
-        <exec executable="${aapt}" failonerror="false">
-            <arg value="r"/>
-            <arg value="-v"/>
-            <arg value="${out.packaged.file}"/>
-            <arg value="assets/splash_image.png"/>
-        </exec>
-        <zip destfile="${out.packaged.file}" update="true">
-            <zipfileset
-                file="${splash_image}"
-                prefix="assets/" />
-        </zip>
-    </target>
-
-    <target name="add_icon_image" if="has_icon_image">
-        <echo>添加角标文件 : ${icon_image}</echo>
-        <exec executable="${aapt}" failonerror="false">
-            <arg value="r"/>
-            <arg value="-v"/>
-            <arg value="${out.packaged.file}"/>
-            <arg value="res/drawable/app_icon.png"/>
-        </exec>
-        <zip destfile="${out.packaged.file}" update="true">
-            <zipfileset
-                file="${icon_image}"
-                prefix="res/drawable/" />
-        </zip>
     </target>
     <target name="add_dexloader" if="keep_classes_dex_enable">
         <property name="loader_classes_dex" value="${buildpath}/classes.dex"/>
         <property name="real_classes_dex" value="encryptdata.dat"/>
         <property name="classes_dex_jar" location="bin/${real_classes_dex}"/>
 
-        <!--
-        <echo>删除${real_classes_dex}文件 </echo>
-        <exec executable="${aapt}" failonerror="false">
-            <arg value="r"/>
-            <arg value="-v"/>
-            <arg value="${out.packaged.file}"/>
-            <arg value="assets/${real_classes_dex}"/>
-        </exec>
-         -->
-         <echo>删除classes.dex文件 </echo>
+        <echo>删除classes.dex文件 </echo>
         <exec executable="${aapt}" failonerror="false">
             <arg value="r"/>
             <arg value="-v"/>
             <arg value="${out.packaged.file}"/>
             <arg value="classes.dex"/>
         </exec>
+
         <echo>添加${loader_classes_dex}文件 </echo>
         <zip destfile="${out.packaged.file}" update="true">
             <zipfileset

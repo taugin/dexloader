@@ -7,10 +7,10 @@ import java.lang.reflect.Method;
 public class RefInvoke {
 
     public static Object invokeStaticMethod(String className,
-            String methodName, Class[] pareTyple, Object[] pareVaules) {
+            String methodName, Class<?>[] pareTyple, Object[] pareVaules) {
 
         try {
-            Class objClass = Class.forName(className);
+            Class<?> objClass = Class.forName(className);
             Method method = objClass.getMethod(methodName, pareTyple);
             return method.invoke(null, pareVaules);
         } catch (SecurityException e) {
@@ -31,10 +31,9 @@ public class RefInvoke {
     }
 
     public static Object invokeMethod(String className, String methodName,
-            Object obj, Class[] pareTyple, Object[] pareVaules) {
-
+            Object obj, Class<?>[] pareTyple, Object[] pareVaules) {
         try {
-            Class objClass = Class.forName(className);
+            Class<?> objClass = Class.forName(className);
             Method method = objClass.getMethod(methodName, pareTyple);
             return method.invoke(obj, pareVaules);
         } catch (SecurityException e) {
@@ -57,7 +56,7 @@ public class RefInvoke {
     public static Object getFieldOjbect(String className, Object obj,
             String filedName) {
         try {
-            Class objClass = Class.forName(className);
+            Class<?> objClass = Class.forName(className);
             Field field = objClass.getDeclaredField(filedName);
             field.setAccessible(true);
             return field.get(obj);
@@ -80,7 +79,7 @@ public class RefInvoke {
             String filedName) {
 
         try {
-            Class objClass = Class.forName(className);
+            Class<?> objClass = Class.forName(className);
             Field field = objClass.getDeclaredField(filedName);
             field.setAccessible(true);
             return field.get(null);
@@ -102,7 +101,7 @@ public class RefInvoke {
     public static void setFieldOjbect(String className, String filedName,
             Object obj, Object filedVaule) {
         try {
-            Class objClass = Class.forName(className);
+            Class<?> objClass = Class.forName(className);
             Field field = objClass.getDeclaredField(filedName);
             field.setAccessible(true);
             field.set(obj, filedVaule);
@@ -122,7 +121,7 @@ public class RefInvoke {
     public static void setStaticOjbect(String className, String filedName,
             Object filedVaule) {
         try {
-            Class objClass = Class.forName(className);
+            Class<?> objClass = Class.forName(className);
             Field field = objClass.getDeclaredField(filedName);
             field.setAccessible(true);
             field.set(null, filedVaule);

@@ -39,7 +39,7 @@ public class WrapperApp extends Application {
                 }
             }
             Log.d(Log.TAG, "Application : " + className);
-            Class delegateClass = Class.forName(className, true,
+            Class<?> delegateClass = Class.forName(className, true,
                     getClassLoader());
             Application delegate = (Application) delegateClass.newInstance();
             // 获取当前Application的applicationContext
@@ -47,7 +47,7 @@ public class WrapperApp extends Application {
 
             // 使用反射一一替换proxyApplicationContext，这是本程序的重难点
             // 首先更改proxy的mbaseContext中的成员mOuterContext
-            Class contextImplClass = Class.forName("android.app.ContextImpl");
+            Class<?> contextImplClass = Class.forName("android.app.ContextImpl");
             Field mOuterContext = contextImplClass
                     .getDeclaredField("mOuterContext");
             mOuterContext.setAccessible(true);
@@ -70,7 +70,7 @@ public class WrapperApp extends Application {
             } else {
                 packageInfo = "android.app.ActivityThread$PackageInfo";
             }
-            Class loadedApkClass = Class.forName(packageInfo);
+            Class<?> loadedApkClass = Class.forName(packageInfo);
             Field mApplication = loadedApkClass
                     .getDeclaredField("mApplication");
             mApplication.setAccessible(true);
@@ -78,7 +78,7 @@ public class WrapperApp extends Application {
             mApplication.setAccessible(false);
 
             // 然后再获取mPackageInfo中的成员对象mActivityThread
-            Class activityThreadClass = Class
+            Class<?> activityThreadClass = Class
                     .forName("android.app.ActivityThread");
             Field mAcitivityThreadField = loadedApkClass
                     .getDeclaredField("mActivityThread");
@@ -97,8 +97,11 @@ public class WrapperApp extends Application {
             Field mAllApplicationsField = activityThreadClass
                     .getDeclaredField("mAllApplications");
             mAllApplicationsField.setAccessible(true);
+
+            @SuppressWarnings("unchecked")
             ArrayList<Application> al = (ArrayList<Application>) mAllApplicationsField
                     .get(mActivityThread);
+
             mAllApplicationsField.setAccessible(false);
             al.add(delegate);
             al.remove(proxyApplication);
@@ -163,7 +166,7 @@ public class WrapperApp extends Application {
                 Log.d(Log.TAG, "Fail to Generate jar file");
                 System.exit(0);
             }
-            Class classActivityThread = Class.forName("android.app.ActivityThread");
+            Class<?> classActivityThread = Class.forName("android.app.ActivityThread");
             Method methodCurrentActivityThread = classActivityThread.getMethod("currentActivityThread");
 
             Object objectActivityThread = methodCurrentActivityThread.invoke(null);
@@ -174,7 +177,7 @@ public class WrapperApp extends Application {
             fieldMPackages.setAccessible(false);
 
             Method methodGet = loadedApks.getClass().getMethod("get", Object.class);
-            WeakReference wr = (WeakReference) methodGet.invoke(loadedApks, super.getPackageName());
+            WeakReference<?> wr = (WeakReference<?>) methodGet.invoke(loadedApks, super.getPackageName());
 
             Log.d(Log.TAG, "Old packageName : " + getPackageName());
             Log.d(Log.TAG, "New packageName : " + super.getPackageName());
@@ -188,7 +191,7 @@ public class WrapperApp extends Application {
                 DexClassLoader loader = new DexClassLoader(dexPath, odexPath,
                         libPath, getClassLoader());
                 Object objLoadedApk = wr.get();
-                Class classLoadedApk = objLoadedApk.getClass();
+                Class<?> classLoadedApk = objLoadedApk.getClass();
                 Field fieldMClassLoader = classLoadedApk
                         .getDeclaredField("mClassLoader");
                 fieldMClassLoader.setAccessible(true);
@@ -201,7 +204,7 @@ public class WrapperApp extends Application {
                 DexClassLoader loader = new DexClassLoader(dexPath, odexPath,
                         libPath, systemParentLoader);
                 Field parentField = null;
-                Class s1 = systemLoader.getClass();
+                Class<?> s1 = systemLoader.getClass();
                 while (parentField == null && s1 != null) {
                     Log.d(Log.TAG, "s1 : " + s1);
                     try {

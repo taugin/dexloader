@@ -57,7 +57,6 @@ public class DexConfig {
         }
     }
 
-    @SuppressWarnings("resource")
     public String extractJarFile() {
         try {
             // mContext.deleteFile(APP_DEX_PATH);
