@@ -151,7 +151,8 @@ public class WrapperApp extends Application {
             String odexPath = getDir(DexConfig.APP_DEX_PATH, MODE_PRIVATE)
                     .getAbsolutePath();
             DexConfig config = new DexConfig(this);
-            String dexPath = config.extractJarFile();
+            config.extractOriginJarFile();
+            String dexPath = config.getExtractJarFilePath();
             String libPath = null;
             try {
                 libPath = getApplicationInfo().nativeLibraryDir;
