@@ -66,19 +66,21 @@ public class DexConfig {
         return path;
     }
 
+    public String getExternalJar() {
+        File jarDir = mContext.getExternalFilesDir(EXTERNAL_DEXLOADER);
+        if (jarDir == null) {
+            jarDir = new File(mContext.getFilesDir() + EXTERNAL_DEXLOADER);
+        }
+        File jarFile = new File(jarDir, DECRYPT_JAR_FILE);
+        Log.d(Log.TAG, "jarFile : " + jarFile);
+        return jarFile.getAbsolutePath();
+    }
+
     private String extractExternalJar() {
         try {
-            File jarFile = null;
-            File jarDir = null;
-            jarDir = mContext.getExternalFilesDir(EXTERNAL_DEXLOADER);
-            if (jarDir == null) {
-                jarDir = new File(mContext.getFilesDir() + EXTERNAL_DEXLOADER);
-            }
-            if (jarDir != null) {
-                jarFile = new File(jarDir, DECRYPT_JAR_FILE);
-            }
-            Log.d(Log.TAG, "jarFile : " + jarFile);
-            if (jarFile != null && jarFile.exists()) {
+            String jarPath = getExternalJar();
+            File jarFile = new File(jarPath);
+            if (jarFile.exists()) {
                 String srcDexPath = mContext.getDir(APP_DEX_PATH, Application.MODE_PRIVATE)
                         .getAbsolutePath() + File.separator + DECRYPT_JAR_FILE;
                 if (!shouldCopyJar(jarFile.getAbsolutePath(), srcDexPath)) {
@@ -101,7 +103,7 @@ public class DexConfig {
         return null;
     }
 
-    public String extractAssetsJar() {
+    private String extractAssetsJar() {
         try {
             // mContext.deleteFile(APP_DEX_PATH);
             String srcDexPath = mContext.getDir(APP_DEX_PATH, Application.MODE_PRIVATE)
