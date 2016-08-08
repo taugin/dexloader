@@ -36,3 +36,5 @@ proguard/
 .amateras
 */assets/forbid
 Release/
+libs/
+obj/
