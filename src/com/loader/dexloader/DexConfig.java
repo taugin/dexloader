@@ -6,7 +6,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.jar.JarInputStream;
@@ -29,8 +28,6 @@ public class DexConfig {
     private static final int VERSION_CODE = 100;
     private static final String VERSION_NAME = "1.0.0";
 
-    private char HEX_DIGITS[] = { '0', '1', '2', '3', '4', '5', '6', '7','8', '9',
-            'A', 'B', 'C', 'D', 'E', 'F' };
     public static final String APPLICATION_KEY = "APPLICATION_CLASS_NAME";
     public static final String APP_DEX_PATH = "dex_path";
 
@@ -38,6 +35,7 @@ public class DexConfig {
     private static final String LODER_CONFIG_FILE = "loaderconfig.dat";
     private static final String SP_DEXLOADER = "_dexloader_config";
 
+    // 默认使用注入的方式
     private DexState mDexState = DexState.DEX_INJECT;
     private List<String> mSdkVersionList;
     private String mEncryptionJarFile = "encryptdata.dat";
@@ -131,7 +129,6 @@ public class DexConfig {
             }
         } catch (IOException e) {
             Log.d(Log.TAG, "error : " + e);
-            e.printStackTrace();
         }
     }
 
@@ -213,8 +210,8 @@ public class DexConfig {
     }
 
     private boolean shouldCopyAssets(String assetsFile, String fileName) {
-        String md5Assets = md5sumAssetsFile(assetsFile);
-        String md5File = md5sum(fileName);
+        String md5Assets = Utils.md5sumAssetsFile(mContext, assetsFile);
+        String md5File = Utils.md5sum(fileName);
         Log.d(Log.TAG, "AssetsFile : " + md5Assets + " , md5File : " + md5File);
         if (!TextUtils.isEmpty(md5Assets) && md5Assets.equals(md5File)) {
             return false;
@@ -222,53 +219,14 @@ public class DexConfig {
         return true;
     }
 
-    private String toHexString(byte[] b) {
-        StringBuilder sb = new StringBuilder(b.length * 2);
-        for (int i = 0; i < b.length; i++) {
-            sb.append(HEX_DIGITS[(b[i] & 0xf0) >>> 4]);
-            sb.append(HEX_DIGITS[b[i] & 0x0f]);
-        }
-        return sb.toString();
-    }
-
-    private String md5sum(String filename) {
-        InputStream fis;
-        byte[] buffer = new byte[1024];
-        int numRead = 0;
-        MessageDigest md5 = null;
-        try {
-            fis = new FileInputStream(filename);
-            md5 = MessageDigest.getInstance("MD5");
-            while ((numRead = fis.read(buffer)) > 0) {
-                md5.update(buffer, 0, numRead);
-            }
-            fis.close();
-            return toHexString(md5.digest());
-        } catch (Exception e) {
-            Log.d(Log.TAG, "error : " + e);
-        }
-        return null;
-    }
-
-    private String md5sumAssetsFile(String filename) {
-        InputStream fis;
-        byte[] buffer = new byte[1024];
-        int numRead = 0;
-        MessageDigest md5 = null;
-        try {
-            fis = mContext.getAssets().open(filename);
-            md5 = MessageDigest.getInstance("MD5");
-            while ((numRead = fis.read(buffer)) > 0) {
-                md5.update(buffer, 0, numRead);
-            }
-            fis.close();
-            return toHexString(md5.digest());
-        } catch (Exception e) {
-            Log.d(Log.TAG, "error : " + e);
-        }
-        return null;
-    }
-
+    /**
+     * 设置三种动态加载方式
+     * 1. 在原来的PathClassLoader中注入新的classes.dex的jar包
+     * 2. 使用新的DexClassLoader替换原来的PathClassLoader
+     * 3. 使用新的DexClassLoader作为主ClassLoader, 原来的PathClassLoader作为父ClassLoader
+     * @author taugin
+     *
+     */
     public enum DexState {
         DEX_INJECT, DEX_REPLACE, DEX_PARENT
     }

@@ -1,5 +1,6 @@
 package com.loader.dexloader;
 
+import java.io.File;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -131,6 +132,7 @@ public class WrapperApp extends Application {
         } catch (InvocationTargetException e) {
             Log.d(Log.TAG, "error : " + e);
         }
+        PatchManager.get(sContext).checkPatch();
     }
 
     @Override
@@ -158,7 +160,7 @@ public class WrapperApp extends Application {
                 libPath = getApplicationInfo().nativeLibraryDir;
             } catch(NoSuchFieldError e) {
                 Log.d(Log.TAG, "error : " + e);
-                libPath = "data/data/" + super.getPackageName() + "/lib";
+                libPath = new File(getApplicationInfo().dataDir, "lib").getAbsolutePath();
             }
             Log.d(Log.TAG, "dex Path : " + dexPath);
             Log.d(Log.TAG, "lib Path : " + libPath);
